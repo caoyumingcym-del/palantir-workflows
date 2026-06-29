@@ -159,3 +159,18 @@ workflows:
   - name: CohortCNVCallingAndMergeForFabric
     subclass: WDL
     primaryDescriptorPath: /gCNV/cohort_cnv_calling_and_merge_for_fabric.wdl
+  - name: HPVDeepSeek
+    subclass: WDL
+    primaryDescriptorPath: /HPVDeepSeek/HPVDeepSeek.wdl
+  - name: HPVDeepSeekGenotyping
+    subclass: WDL
+    primaryDescriptorPath: /HPVDeepSeek/HPVDeepSeekGenotyping.wdl
+  - name: HPVDeepSeekSomaticVariantCalling
+    subclass: WDL
+    primaryDescriptorPath: /HPVDeepSeek/HPVDeepSeekSomaticVariantCalling.wdl
+  - name: HPVDeepSeekTertiaryAnalysis
+    subclass: WDL
+    primaryDescriptorPath: /HPVDeepSeek/HPVDeepSeekTertiaryAnalysis.wdl
+  - name: HPVDeepSeekNormalization
+    subclass: WDL
+    primaryDescriptorPath: /HPVDeepSeek/HPVDeepSeekNormalization.wdl
