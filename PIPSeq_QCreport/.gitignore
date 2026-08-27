@@ -15,3 +15,7 @@ __pycache__/
 
 # Manifest backups written by perturbseq_report itself
 *.bak-*
+
+# `docker save` output for uploading to ICA's Docker Repository (System
+# Settings) -- hundreds of MB, never belongs in git. See containers/SETUP.md.
+*.tar

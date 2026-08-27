@@ -179,10 +179,14 @@ pipeline itself.
 **Two things that are easy to miss on ICA specifically:**
 
 1. **`qc_container` is required and has no default**, for the reason above:
-   ICA does not reliably apply `-profile docker`, so paste the pushed ECR
-   image reference (from `build_and_push.sh`'s output) into the
-   `qc_container` field every time you launch, or bake it into a saved
-   input template if ICA supports one.
+   ICA does not reliably apply `-profile docker`, so paste an image
+   reference into the `qc_container` field every time you launch (or bake
+   it into a saved input template if ICA supports one). Two ways to get
+   that reference -- see `containers/SETUP.md` for both in full: push to
+   your own AWS ECR (`build_and_push.sh`), or, if you don't have an AWS
+   account for this, build locally and upload the image as a TAR directly
+   into ICA's own Docker Repository (System Settings) -- no AWS account
+   needed either way.
 2. **ICA's git-based pipeline import pins to a specific commit, not a
    branch.** Pushing a new commit to this branch does **not** update an
    already-imported ICA pipeline -- ICA has to be told to re-import at the
