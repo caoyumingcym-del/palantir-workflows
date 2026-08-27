@@ -53,24 +53,36 @@ Nextflow edit, not a read-only or shared reference copy.
 python3 bin/make_test_data.py --outdir test_data
 nextflow run . -profile test
 
-# 2. On your own data, single manifest, first pass (QC review):
-nextflow run . --manifest /path/to/sample_manifest.csv
+# 2. Build and push the container image once (see Environments below):
+cd containers && export AWS_REGION=... ECR_REGISTRY=... && ./build_and_push.sh
+cd ..
+QC_IMAGE=<the image reference build_and_push.sh printed>
+
+# 3. On your own data, single manifest, first pass (QC review):
+nextflow run . -profile docker --qc_container "$QC_IMAGE" \
+    --manifest /path/to/sample_manifest.csv
 
 #    ...look at results/<manifest-name>/analysis_outputs/qc_explore.html,
 #    edit thresholds in the manifest if needed, then run the identical
 #    command again for the full report:
-nextflow run . --manifest /path/to/sample_manifest.csv
+nextflow run . -profile docker --qc_container "$QC_IMAGE" \
+    --manifest /path/to/sample_manifest.csv
 
-# 3. Skip the review step entirely (batch jobs / re-runs of a known experiment):
-nextflow run . --manifest /path/to/sample_manifest.csv --mode auto
+# 4. Skip the review step entirely (batch jobs / re-runs of a known experiment):
+nextflow run . -profile docker --qc_container "$QC_IMAGE" \
+    --manifest /path/to/sample_manifest.csv --mode auto
 
-# 4. Several manifests at once, one Nextflow task each, run in parallel:
-nextflow run . --manifest 'manifests/*.csv' --mode auto
+# 5. Several manifests at once, one Nextflow task each, run in parallel:
+nextflow run . -profile docker --qc_container "$QC_IMAGE" \
+    --manifest 'manifests/*.csv' --mode auto
 ```
 
-Add `-profile docker` (after building the image, see below), `-profile
-conda`, or `-resume` as needed. `-profile test` and real-data runs can be
-combined with `docker`/`conda`, e.g. `-profile test,docker`.
+`-profile docker` is what makes Nextflow actually run each task inside
+`docker run`; `--qc_container` is *which* image it uses (see Environments
+below for why these are two separate things, and for conda/bare-metal
+alternatives that don't need either). Add `-resume` as needed. `-profile
+test` and real-data runs can be combined with `docker`/`conda`, e.g.
+`-profile test,docker`.
 
 ## Inputs
 
@@ -88,6 +100,9 @@ combined with `docker`/`conda`, e.g. `-profile test,docker`.
   work directory and get published cleanly under `--outdir`). It still has to
   be present and non-blank for the manifest to validate, since the CLI
   requires it, but its value doesn't matter here.
+- **`--qc_container`** (required for any containerized run -- docker,
+  singularity, or ICA): the image every step runs in. No default on purpose;
+  see Environments below.
 
 ## Outputs
 
@@ -117,6 +132,7 @@ for what each one does). The most common:
 
 | param                 | CLI flag equivalent      | notes |
 |-----------------------|---------------------------|-------|
+| `--qc_container`      | n/a (Nextflow `container` directive) | required for docker/singularity/ICA; see Environments |
 | `--mode`              | `--explore` / `--auto-thresholds` | see above |
 | `--min_genes` etc.    | `--min-genes` etc.        | the 5 QC thresholds |
 | `--config`             | `--config`               | JSON/YAML config-override file |
@@ -130,16 +146,52 @@ for what each one does). The most common:
 
 ## Environments
 
+- **Docker** (`-profile docker`): build and push the image once with
+  [`containers/build_and_push.sh`](containers/build_and_push.sh) (see
+  [`containers/SETUP.md`](containers/SETUP.md) for prerequisites), then pass
+  the pushed reference as `--qc_container` on every run. The image is
+  **not** hardcoded in `nextflow.config` -- `--qc_container` is a required
+  parameter that `RUN_QC_REPORT`'s `container` directive reads directly. This
+  is deliberate: `-profile docker` only tells Nextflow to actually invoke
+  `docker run`; it does not by itself say *which* image, and a hardcoded
+  image tucked inside a profile block turned out to be exactly what silently
+  never activated when this pipeline was first run on ICA (see "Running on
+  ICA" below).
+- **Singularity** (`-profile singularity`): build a `.sif` from the pushed
+  Docker image (see comment in `nextflow.config`) and pass its path as
+  `--qc_container`.
 - **conda** (`-profile conda`): builds from [`envs/environment.yml`](envs/environment.yml).
-- **Docker** (`-profile docker`): build the image first --
-  `docker build -t pipseq-qcreport:1.3.5 -f containers/Dockerfile .`
-  (run from this directory). Push it to a registry you control and update
-  `process.container` in `nextflow.config` if you need it available to a
-  remote executor.
-- **Singularity** (`-profile singularity`): build a `.sif` from the Docker
-  image (see comment in `nextflow.config`).
+  No container/`--qc_container` needed.
 - **Bare metal**: install [`perturbseq_report_v1.3.5/requirements.txt`](perturbseq_report_v1.3.5/requirements.txt)
-  yourself and run with no `-profile` (or `-profile local`).
+  yourself and run with no `-profile` (or `-profile local`). No
+  `--qc_container` needed.
+
+## Running on ICA
+
+`inputForm.json` and `nextflow_schema.json` are both hand-authored (not
+ICA's auto-generated form -- that guesses a widget type per parameter with
+no real type information and gets several wrong, e.g. rendering string
+parameters as checkboxes). Point ICA's pipeline import at
+`PIPSeq_QCreport/inputForm.json` for the launch form and
+`PIPSeq_QCreport/nextflow.config` / `PIPSeq_QCreport/main.nf` for the
+pipeline itself.
+
+**Two things that are easy to miss on ICA specifically:**
+
+1. **`qc_container` is required and has no default**, for the reason above:
+   ICA does not reliably apply `-profile docker`, so paste the pushed ECR
+   image reference (from `build_and_push.sh`'s output) into the
+   `qc_container` field every time you launch, or bake it into a saved
+   input template if ICA supports one.
+2. **ICA's git-based pipeline import pins to a specific commit, not a
+   branch.** Pushing a new commit to this branch does **not** update an
+   already-imported ICA pipeline -- ICA has to be told to re-import at the
+   new commit (see `SingleCell/PIPseqDownsample/ica_tools/export_pipeline_to_ica.py`
+   elsewhere in this repo for a script that automates that against this
+   same ICA project's API; there is no equivalent script here yet). Until
+   there is, re-import manually in the ICA UI after pushing changes, and
+   confirm the commit shown in the imported pipeline's details matches
+   what you just pushed before relying on a run.
 
 ## Resources
 

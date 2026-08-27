@@ -24,6 +24,13 @@ dependencies:
   - python-igraph>=0.10
   - h5py>=3.8
   - pyyaml>=6.0
+  # scrublet depends on annoy, which has no prebuilt wheel on PyPI and needs a
+  # C++ compiler to build from source -- absent from the plain micromamba
+  # base image, so `pip install scrublet` failed with "g++: No such file or
+  # directory". conda-forge ships a prebuilt python-annoy binary; installing
+  # it here means pip finds the requirement already satisfied and never
+  # tries to compile it.
+  - python-annoy>=1.17
   - pip:
       - harmonypy>=0.0.9
       - scrublet>=0.2.3

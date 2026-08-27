@@ -19,10 +19,29 @@
 // makes `-resume` work correctly here: Nextflow hashes the staged directory's
 // contents, so editing the manifest's thresholds invalidates the cached task.
 
+// Some launchers (ICA's inputForm.json among them) have no way to submit a
+// truly absent value for a text/number field -- an untouched box comes
+// through as an empty string, not Nextflow `null`. A bare `!= null` check
+// (fine for CLI/-params-file use, where an omitted key really is null) would
+// then treat "" as a real override and hand argparse an empty --flag value.
+// isSet() treats blank-or-null uniformly as "not set". File-scoped (not
+// defined inside `script:`) so the `container` directive below can use it too.
+def isSet(v) { v != null && v.toString().trim() != '' }
+
 process RUN_QC_REPORT {
     tag "$id"
     label 'process_high_memory'
     publishDir "${params.outdir}/${id}", mode: params.publish_mode, overwrite: true
+    // Required, no default (see nextflow.config) -- ICA does not reliably
+    // apply Nextflow config profiles, so a container wired up only under
+    // `-profile docker` silently never activates there and the process runs
+    // on the bare scheduler node instead (which is how we found this: it
+    // failed with "python3: command not found"). A required parameter
+    // referenced directly here is the pattern this lab's other ICA-deployed
+    // Nextflow pipelines already use (see SingleCell/PIPseqDownsample's
+    // `params.qc_container`), and unlike a profile it cannot be silently
+    // skipped -- the pipeline won't launch without it.
+    container { isSet(params.qc_container) ? params.qc_container : null }
 
     input:
     tuple val(id), path(manifest_dir), val(manifest_name)
@@ -36,14 +55,6 @@ process RUN_QC_REPORT {
     path "${manifest_name}.bak-*", optional: true, emit: manifest_backup
 
     script:
-    // Some launchers (ICA's inputForm.json among them) have no way to submit
-    // a truly absent value for a text/number field -- an untouched box comes
-    // through as an empty string, not Nextflow `null`. A bare `!= null` check
-    // (fine for CLI/-params-file use, where an omitted key really is null)
-    // would then treat "" as a real override and hand argparse an empty
-    // --flag value. isSet() treats blank-or-null uniformly as "not set".
-    def isSet = { v -> v != null && v.toString().trim() != '' }
-
     def flags = []
 
     if (params.mode == 'explore')      flags << '--explore'
@@ -104,9 +115,18 @@ process RUN_QC_REPORT {
     // outright (the script path resolves to nothing). Falling back here makes
     // it structurally impossible for a launcher to break this by submitting
     // an empty value for a field it thinks is just unset.
+    //
+    // The fallback itself now tracks qc_container rather than being a fixed
+    // path: containers/Dockerfile unpacks the vendored package at
+    // /opt/perturbseq_report_v1.3.5, so whenever a container is actually in
+    // play that's where it lives regardless of this checkout's own location;
+    // only a genuinely container-free run (conda/bare metal) should resolve
+    // it relative to projectDir.
     def pipelineDir = isSet(params.pipeline_dir)
         ? params.pipeline_dir
-        : "${projectDir}/perturbseq_report_v1.3.5"
+        : (isSet(params.qc_container)
+            ? '/opt/perturbseq_report_v1.3.5'
+            : "${projectDir}/perturbseq_report_v1.3.5")
 
     """
     set -euo pipefail
