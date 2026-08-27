@@ -36,17 +36,25 @@ process RUN_QC_REPORT {
     path "${manifest_name}.bak-*", optional: true, emit: manifest_backup
 
     script:
+    // Some launchers (ICA's inputForm.json among them) have no way to submit
+    // a truly absent value for a text/number field -- an untouched box comes
+    // through as an empty string, not Nextflow `null`. A bare `!= null` check
+    // (fine for CLI/-params-file use, where an omitted key really is null)
+    // would then treat "" as a real override and hand argparse an empty
+    // --flag value. isSet() treats blank-or-null uniformly as "not set".
+    def isSet = { v -> v != null && v.toString().trim() != '' }
+
     def flags = []
 
     if (params.mode == 'explore')      flags << '--explore'
     else if (params.mode == 'auto')    flags << '--auto-thresholds'
     // 'default' (the CLI's own explore-first decision): no flag added.
 
-    if (params.min_genes   != null) flags << "--min-genes ${params.min_genes}"
-    if (params.max_genes   != null) flags << "--max-genes ${params.max_genes}"
-    if (params.min_counts  != null) flags << "--min-counts ${params.min_counts}"
-    if (params.max_counts  != null) flags << "--max-counts ${params.max_counts}"
-    if (params.max_mito    != null) flags << "--max-mito ${params.max_mito}"
+    if (isSet(params.min_genes))  flags << "--min-genes ${params.min_genes}"
+    if (isSet(params.max_genes))  flags << "--max-genes ${params.max_genes}"
+    if (isSet(params.min_counts)) flags << "--min-counts ${params.min_counts}"
+    if (isSet(params.max_counts)) flags << "--max-counts ${params.max_counts}"
+    if (isSet(params.max_mito))   flags << "--max-mito ${params.max_mito}"
 
     if (params.config)          flags << "--config ${params.config}"
     if (params.counts_layer)    flags << "--counts-layer ${params.counts_layer}"
@@ -62,17 +70,22 @@ process RUN_QC_REPORT {
     if (params.low_memory)      flags << '--low-memory'
     if (params.batch_correct)   flags << "--batch-correct ${params.batch_correct}"
     if (params.hvg_batch_key)   flags << "--hvg-batch-key ${params.hvg_batch_key}"
-    if (params.resolution  != null) flags << "--resolution ${params.resolution}"
-    if (params.n_top_genes != null) flags << "--n-top-genes ${params.n_top_genes}"
+    if (isSet(params.resolution))  flags << "--resolution ${params.resolution}"
+    if (isSet(params.n_top_genes)) flags << "--n-top-genes ${params.n_top_genes}"
 
-    if (params.guide_min_reads  != null) flags << "--guide-min-reads ${params.guide_min_reads}"
-    if (params.guide_purity_min != null) flags << "--guide-purity-min ${params.guide_purity_min}"
+    if (isSet(params.guide_min_reads))  flags << "--guide-min-reads ${params.guide_min_reads}"
+    if (isSet(params.guide_purity_min)) flags << "--guide-purity-min ${params.guide_purity_min}"
     if (params.ntc_label)                flags << "--ntc-label ${params.ntc_label}"
-    if (params.dual_guide == true)       flags << '--dual-guide'
-    if (params.dual_guide == false)      flags << '--single-guide'
+    // 'auto' (default): no flag, let the tool autodetect from guide-ID structure.
+    // A plain true/false param can't survive a schema-driven checkbox, which
+    // always submits false when left untouched -- silently forcing single-guide
+    // on every UI-launched run instead of autodetecting. The three-way string
+    // is what makes "untouched" distinguishable from "explicitly single".
+    if (params.dual_guide == 'dual')     flags << '--dual-guide'
+    if (params.dual_guide == 'single')   flags << '--single-guide'
 
     if (params.hto_threshold_mode) flags << "--hto-threshold-mode ${params.hto_threshold_mode}"
-    if (params.hto_quantile != null) flags << "--hto-quantile ${params.hto_quantile}"
+    if (isSet(params.hto_quantile)) flags << "--hto-quantile ${params.hto_quantile}"
 
     // Free-text field: single-quoted, with embedded single quotes escaped
     // (close quote, escaped quote, reopen quote) so an apostrophe in the
@@ -80,15 +93,24 @@ process RUN_QC_REPORT {
     if (params.title)           flags << "--title '${params.title.toString().replace("'", "'\\''")}'"
     if (params.link_figures)    flags << '--link-figures'
     if (params.no_tables)       flags << '--no-tables'
-    if (params.max_de_targets != null) flags << "--max-de-targets ${params.max_de_targets}"
+    if (isSet(params.max_de_targets)) flags << "--max-de-targets ${params.max_de_targets}"
 
     if (params.extra_args)      flags << params.extra_args
 
     def flag_str = flags.join(' \\\n        ')
 
+    // Same blank-vs-null issue as isSet() above, but higher stakes: if this
+    // ever arrives blank the run doesn't misbehave on one option, it fails
+    // outright (the script path resolves to nothing). Falling back here makes
+    // it structurally impossible for a launcher to break this by submitting
+    // an empty value for a field it thinks is just unset.
+    def pipelineDir = isSet(params.pipeline_dir)
+        ? params.pipeline_dir
+        : "${projectDir}/perturbseq_report_v1.3.5"
+
     """
     set -euo pipefail
-    python3 "${params.pipeline_dir}/run_perturbseq_report.py" \\
+    python3 "${pipelineDir}/run_perturbseq_report.py" \\
         --manifest "${manifest_dir}/${manifest_name}" \\
         --output-path . \\
         ${flag_str} \\

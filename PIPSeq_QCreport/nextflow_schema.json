@@ -1,0 +1,310 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema",
+  "$id": "https://raw.githubusercontent.com/caoyumingcym-del/palantir-workflows/yc-PIPseq-QCreport/PIPSeq_QCreport/nextflow_schema.json",
+  "title": "PIPSeq_QCreport pipeline parameters",
+  "description": "Nextflow wrapper around perturbseq_report -- a Perturb-seq QC and analysis pipeline that turns a sample manifest + .h5ad into a self-contained HTML report.",
+  "type": "object",
+  "definitions": {
+    "input_output_options": {
+      "title": "Input/output options",
+      "type": "object",
+      "fa_icon": "fas fa-terminal",
+      "description": "The only option you must set. Everything else has a working default.",
+      "required": ["manifest"],
+      "properties": {
+        "manifest": {
+          "type": "string",
+          "format": "file-path",
+          "mimetype": "text/csv",
+          "description": "Sample manifest CSV/TSV.",
+          "help_text": "Points at the sequencing data (h5ad_path) and where results go (output_path is ignored by this pipeline -- see 'outdir' instead). Also carries the optional gRNA/hashtag whitelist paths and, once filled in, the five QC thresholds below. A run that reaches the QC stage writes those thresholds back into this file (with a timestamped backup made first), so pick a manifest that lives somewhere you're fine having edited -- not a read-only reference copy. This field also accepts a glob (e.g. 'manifests/*.csv') to launch one parallel task per matching file, though a single-file picker UI may not offer a way to type a glob -- use the CLI or 'enter path manually' option if your launcher only lets you browse to one file.",
+          "fa_icon": "fas fa-file-csv"
+        },
+        "outdir": {
+          "type": "string",
+          "format": "directory-path",
+          "default": "results",
+          "description": "Where reports, figures and tables are published.",
+          "help_text": "Each manifest gets its own subfolder here, named after the manifest's filename (without extension): <outdir>/<manifest-name>/analysis_outputs/. The manifest's own 'output_path' column is not used for this -- it's ignored so results land in Nextflow's own output tree instead of wherever the manifest happened to point.",
+          "fa_icon": "fas fa-folder-open"
+        },
+        "publish_mode": {
+          "type": "string",
+          "default": "copy",
+          "enum": ["copy", "symlink", "link", "move", "rellink", "copyNoFollow"],
+          "hidden": true,
+          "description": "How published files are placed in --outdir (Nextflow publishDir mode).",
+          "fa_icon": "fas fa-copy"
+        }
+      }
+    },
+    "run_mode_options": {
+      "title": "Run mode",
+      "type": "object",
+      "fa_icon": "fas fa-play",
+      "description": "The pipeline is explore-first: a manifest with no QC thresholds set stops after QC review by default, and needs to be run a second time (after the thresholds are filled in) to produce the full report.",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "default": "default",
+          "enum": ["default", "explore", "auto"],
+          "description": "default: let the manifest's threshold state decide (explore first, full once thresholds are set). explore: always stop after QC. auto: skip the review step, run end-to-end on thresholds derived from the data.",
+          "fa_icon": "fas fa-toggle-on"
+        }
+      }
+    },
+    "qc_threshold_options": {
+      "title": "QC thresholds",
+      "type": "object",
+      "fa_icon": "fas fa-filter",
+      "description": "Per-cell QC gates. Leave all five blank to have them derived from the data (recommended for a first pass -- see 'mode' above). These override anything already set in the manifest.",
+      "properties": {
+        "min_genes": {
+          "type": "number",
+          "description": "Minimum genes detected per cell. Leave blank to derive from the data.",
+          "fa_icon": "fas fa-dna"
+        },
+        "max_genes": {
+          "type": "number",
+          "description": "Maximum genes detected per cell. Leave blank to derive from the data.",
+          "fa_icon": "fas fa-dna"
+        },
+        "min_counts": {
+          "type": "number",
+          "description": "Minimum total UMI counts per cell. Leave blank to derive from the data.",
+          "fa_icon": "fas fa-dna"
+        },
+        "max_counts": {
+          "type": "number",
+          "description": "Maximum total UMI counts per cell. Leave blank to derive from the data.",
+          "fa_icon": "fas fa-dna"
+        },
+        "max_mito": {
+          "type": "number",
+          "description": "Maximum percent mitochondrial reads. Leave blank to derive from the data.",
+          "fa_icon": "fas fa-dna"
+        }
+      }
+    },
+    "transcriptome_options": {
+      "title": "Transcriptome / clustering options",
+      "type": "object",
+      "fa_icon": "fas fa-project-diagram",
+      "description": "Normalisation, embedding and clustering. All optional; the defaults match a typical single-condition Perturb-seq run.",
+      "properties": {
+        "counts_layer": {
+          "type": "string",
+          "description": "Read raw counts from adata.layers[NAME] instead of X.",
+          "help_text": "Use when X holds normalised or log-transformed values and raw counts live in a named layer.",
+          "hidden": true,
+          "fa_icon": "fas fa-layer-group"
+        },
+        "subsample_cells": {
+          "type": "integer",
+          "description": "Randomly subsample to at most N cells after loading.",
+          "help_text": "Escape hatch for a very large experiment that won't fit in memory. The report states the subsample size prominently, since per-perturbation cell counts scale down with it.",
+          "fa_icon": "fas fa-random"
+        },
+        "conditions": {
+          "type": "string",
+          "description": "Manifest columns to use as comparison axes, space-separated (e.g. 'fixation gRNA_method'). Leave blank to autodetect.",
+          "fa_icon": "fas fa-columns"
+        },
+        "doublets": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run scrublet doublet annotation.",
+          "help_text": "Off by default: scrublet assumes a heterogeneous population, so its scores aren't informative for a homogeneous line, and per-batch it is memory-hungry. Doublets are never dropped either way, only flagged.",
+          "fa_icon": "fas fa-clone"
+        },
+        "no_cell_cycle": {
+          "type": "boolean",
+          "default": false,
+          "description": "Skip cell-cycle scoring.",
+          "fa_icon": "fas fa-sync"
+        },
+        "regress_qc": {
+          "type": "boolean",
+          "default": false,
+          "description": "Regress sequencing depth and %mito out of the embedding.",
+          "help_text": "Off by default: it only ever affects clusters/UMAP/E-distance (never DE results) and is the longest step in the stage. Cell-cycle regression is deliberately not offered as an option -- many knockouts are proliferation phenotypes, and regressing out cell-cycle scores would suppress exactly the perturbations being screened for.",
+          "fa_icon": "fas fa-calculator"
+        },
+        "batch_correct": {
+          "type": "string",
+          "default": "none",
+          "enum": ["none", "harmony"],
+          "description": "Batch correction on the embedding.",
+          "help_text": "'harmony' corrects the PCA, which propagates to clusters, UMAP AND the E-distance effect sizes in the perturbation section -- refused if the resolved batch key is also a declared condition column, since that would integrate away the comparison the experiment is designed to measure.",
+          "fa_icon": "fas fa-balance-scale"
+        },
+        "hvg_batch_key": {
+          "type": "string",
+          "description": "Make highly-variable-gene selection batch-aware on this manifest column.",
+          "help_text": "Off by default. Do not point it at a condition column -- with seurat_v3 this de-prioritises genes that differ between levels of that column, which is the opposite of what you want when the column IS the comparison.",
+          "hidden": true,
+          "fa_icon": "fas fa-balance-scale"
+        },
+        "resolution": {
+          "type": "number",
+          "description": "Leiden clustering resolution (tool default: 1.0).",
+          "fa_icon": "fas fa-sliders-h"
+        },
+        "n_top_genes": {
+          "type": "integer",
+          "description": "Number of highly variable genes (tool default: 5000).",
+          "fa_icon": "fas fa-sliders-h"
+        },
+        "cluster_col": {
+          "type": "string",
+          "description": "Name of an existing obs column holding cluster labels, to reuse instead of reclustering.",
+          "help_text": "Reusing an existing embedding requires PCA, UMAP AND a recognised cluster column all to be present. If your cluster column's name isn't one of the built-in candidates (leiden, leiden_clusters, louvain, clusters, leiden_gpu) and isn't given here, the pipeline can't tell clustering was already done and recomputes the whole embedding.",
+          "hidden": true,
+          "fa_icon": "fas fa-object-group"
+        },
+        "force_recompute": {
+          "type": "boolean",
+          "default": false,
+          "description": "Ignore QC metrics, embedding, clustering and doublet calls already present in the h5ad; recompute everything from raw counts.",
+          "hidden": true,
+          "fa_icon": "fas fa-redo"
+        },
+        "low_memory": {
+          "type": "boolean",
+          "default": false,
+          "description": "Trade speed for peak memory (skips copying the input matrix, smaller DE gene blocks).",
+          "fa_icon": "fas fa-memory"
+        },
+        "skip_input_check": {
+          "type": "boolean",
+          "default": false,
+          "description": "Skip the plausibility check that the expression matrix is real gene expression.",
+          "help_text": "Only for a matrix you've already validated by other means -- this check exists because a var_names/X column permutation produced two confident, wrong reports before anyone thought to ask whether ACTB was detected.",
+          "hidden": true,
+          "fa_icon": "fas fa-exclamation-triangle"
+        }
+      }
+    },
+    "guide_calling_options": {
+      "title": "Guide calling",
+      "type": "object",
+      "fa_icon": "fas fa-crosshairs",
+      "description": "How guide-RNA assignment decides which guide (if any) a cell carries.",
+      "properties": {
+        "guide_min_reads": {
+          "type": "integer",
+          "description": "Minimum guide UMIs for a cell to be eligible for assignment (tool default: 10).",
+          "fa_icon": "fas fa-crosshairs"
+        },
+        "guide_purity_min": {
+          "type": "number",
+          "description": "Minimum top1/(top1+top2) percent required to assign a guide (tool default: 75).",
+          "fa_icon": "fas fa-crosshairs"
+        },
+        "ntc_label": {
+          "type": "string",
+          "default": "NTC",
+          "description": "Label used for non-targeting controls.",
+          "fa_icon": "fas fa-tag"
+        },
+        "dual_guide": {
+          "type": "boolean",
+          "description": "Force dual-guide (iBAR) handling. Leave unset to autodetect from guide-ID structure (the tool default, and correct for almost every library).",
+          "help_text": "This maps to a true/false/unset parameter in nextflow.config (unset = autodetect, true = force dual-guide, false = force single-guide) that a checkbox can only imperfectly represent: a checkbox that is left untouched may still be submitted as 'false' by some launchers, which would force single-guide instead of autodetecting. If that happens on your platform, use 'extra_args' with --dual-guide or --single-guide instead of this field, or leave this hidden section alone entirely and let the tool autodetect (the recommended default for essentially every library).",
+          "hidden": true,
+          "fa_icon": "fas fa-code-branch"
+        }
+      }
+    },
+    "hashtag_options": {
+      "title": "Hashtags",
+      "type": "object",
+      "fa_icon": "fas fa-tags",
+      "description": "Hashtag demultiplexing thresholding, when the experiment used cell hashing.",
+      "properties": {
+        "hto_threshold_mode": {
+          "type": "string",
+          "default": "background_quantile",
+          "enum": ["background_quantile", "fixed", "otsu"],
+          "description": "How the per-hashtag positivity threshold is chosen.",
+          "fa_icon": "fas fa-tags"
+        },
+        "hto_quantile": {
+          "type": "number",
+          "description": "Background quantile used as the threshold when hto_threshold_mode is background_quantile (tool default: 0.99).",
+          "fa_icon": "fas fa-tags"
+        }
+      }
+    },
+    "report_options": {
+      "title": "Report",
+      "type": "object",
+      "fa_icon": "fas fa-file-alt",
+      "description": "Controls over the HTML report itself.",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Report title. Defaults to the experiment ID guessed from the manifest/output path.",
+          "fa_icon": "fas fa-heading"
+        },
+        "link_figures": {
+          "type": "boolean",
+          "default": false,
+          "description": "Link figures instead of embedding them.",
+          "help_text": "Produces a smaller HTML file, but the report is then no longer a single portable file -- the figures/ folder has to travel with it.",
+          "hidden": true,
+          "fa_icon": "fas fa-image"
+        },
+        "no_tables": {
+          "type": "boolean",
+          "default": false,
+          "description": "Omit data tables from the HTML (the CSVs are still written to tables/).",
+          "hidden": true,
+          "fa_icon": "fas fa-table"
+        },
+        "max_de_targets": {
+          "type": "integer",
+          "description": "Cap on perturbations sent to differential expression (tool default: 40).",
+          "fa_icon": "fas fa-vial"
+        }
+      }
+    },
+    "advanced_options": {
+      "title": "Advanced / escape hatches",
+      "type": "object",
+      "fa_icon": "fas fa-tools",
+      "description": "For cases the options above don't cover. Most users will never need these.",
+      "properties": {
+        "config": {
+          "type": "string",
+          "format": "file-path",
+          "description": "JSON or YAML file of perturbseq_report configuration overrides.",
+          "help_text": "For settings with no dedicated option here -- anything in perturbseq_report's PipelineConfig dataclasses (see the vendored package's config.py).",
+          "fa_icon": "fas fa-file-code"
+        },
+        "extra_args": {
+          "type": "string",
+          "description": "Any other perturbseq-report CLI flag(s), passed through verbatim.",
+          "hidden": true,
+          "fa_icon": "fas fa-terminal"
+        },
+        "pipeline_dir": {
+          "type": "string",
+          "description": "Where the vendored perturbseq_report package lives. Set automatically per execution profile -- do not edit unless you know why.",
+          "hidden": true,
+          "fa_icon": "fas fa-folder"
+        }
+      }
+    }
+  },
+  "allOf": [
+    { "$ref": "#/definitions/input_output_options" },
+    { "$ref": "#/definitions/run_mode_options" },
+    { "$ref": "#/definitions/qc_threshold_options" },
+    { "$ref": "#/definitions/transcriptome_options" },
+    { "$ref": "#/definitions/guide_calling_options" },
+    { "$ref": "#/definitions/hashtag_options" },
+    { "$ref": "#/definitions/report_options" },
+    { "$ref": "#/definitions/advanced_options" }
+  ]
+}
