@@ -536,7 +536,8 @@ def scatter_embedding(
     point_size: float | None = None,
     cap_percentile: float | None = None,
     legend: bool = True,
-    max_legend_entries: int = 24,
+    max_legend_entries: int = 60,
+    legend_max_rows: int = 15,
 ) -> None:
     """Embedding scatter coloured by a categorical or continuous variable.
 
@@ -544,6 +545,18 @@ def scatter_embedding(
     which the collaborator's report does for good reason: without it a handful
     of high-count multiplets compress the colour range so the bulk of cells are
     all one shade.
+
+    ``legend_max_rows`` wraps the categorical legend into additional columns
+    once it would otherwise exceed this many rows -- e.g. Leiden clustering
+    with no small-cluster merging (the default since v1.3.0) routinely
+    produces 30-50+ clusters. A single tall column is not just hard to read;
+    ``save_figure``'s ``bbox_inches="tight"`` expands the saved canvas to fit
+    it, which visibly shrinks this panel's plotting area relative to its
+    siblings in the same figure. Spreading entries across columns bounds the
+    legend's height instead of its width, which the figure has more of to
+    give up outside the axes. ``max_legend_entries`` is still a hard cutoff
+    above which no legend is drawn at all (the in-plot cluster-number labels
+    from ``label_clusters`` remain the only way to identify a cluster then).
     """
     xy = np.asarray(xy, dtype=float)
     if xy.ndim != 2 or xy.shape[1] < 2 or xy.shape[0] == 0:
@@ -570,8 +583,10 @@ def scatter_embedding(
                         bbox=dict(boxstyle="round,pad=0.15", fc="white",
                                   ec="none", alpha=0.75), zorder=10)
         if legend and len(order) <= max_legend_entries:
+            ncol = max(1, math.ceil(len(order) / legend_max_rows))
             ax.legend(bbox_to_anchor=(1.01, 1), loc="upper left", markerscale=3,
-                      fontsize=fs(cfg, "legend"))
+                      fontsize=fs(cfg, "legend"), ncol=ncol,
+                      columnspacing=0.9, handletextpad=0.4, handlelength=1.2)
     else:
         v = pd.to_numeric(values, errors="coerce").to_numpy(dtype=float)
         vmax = (
