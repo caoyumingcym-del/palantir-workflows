@@ -1,0 +1,13 @@
+sample,demux_id,aliquot,hashtag_set,family,cell_line,library,condition,replicate
+sample_1,S01,a1,prot:hash.A+prot:hash.B,A,A375,brunello_v1,untreated,1
+sample_1,S01,a2,prot:hash.G,A,A375,brunello_v1,untreated,1
+sample_1,S02,a1,prot:hash.A+prot:hash.C,A,A375,brunello_v1,untreated,2
+sample_1,S03,a1,prot:hash.A+prot:hash.E,A,A375,brunello_v1,TGFb,1
+sample_1,S04,a1,prot:hash.B+prot:hash.F,B,A375,emt_focused,untreated,1
+sample_1,S04,a2,prot:hash.D,B,A375,emt_focused,untreated,1
+sample_1,S05,a1,prot:hash.B+prot:hash.H,B,A375,emt_focused,TGFb,1
+sample_1,S06,a1,prot:hash.C+prot:hash.G,C,HT29,emt_focused,untreated,1
+sample_1,S07,a1,prot:hash.D+prot:hash.G,C,HT29,emt_focused,TGFb,1
+sample_1,S08,a1,prot:hash.C+prot:hash.F,D,PC9,brunello_v1,untreated,1
+sample_1,S09,a1,prot:hash.E+prot:hash.H,D,PC9,brunello_v1,TGFb,1
+sample_1,S10,a1,untagged,E,MCF7,brunello_v1,untreated,1

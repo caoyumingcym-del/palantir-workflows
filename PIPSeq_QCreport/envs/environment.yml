@@ -1,0 +1,29 @@
+# Conda environment for perturbseq_report_v1.3.5, for `nextflow run . -profile conda`
+# (process.conda points here -- see ../nextflow.config).
+#
+# Mirrors perturbseq_report_v1.3.5/requirements.txt, with the "recommended"
+# extras included by default: without leidenalg/igraph the pipeline silently
+# falls back to k-means clustering, and without harmonypy/scrublet/pyyaml a
+# few optional features are unavailable. All are worth having for a pipeline
+# execution environment that is built once and reused.
+name: pipseq-qcreport
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - pip
+  - numpy>=1.24
+  - pandas>=2.0,<3
+  - matplotlib>=3.7
+  - anndata>=0.9
+  - scanpy>=1.9
+  - scipy>=1.10
+  - scikit-learn>=1.3
+  - leidenalg>=0.10
+  - python-igraph>=0.10
+  - h5py>=3.8
+  - pyyaml>=6.0
+  - pip:
+      - harmonypy>=0.0.9
+      - scrublet>=0.2.3

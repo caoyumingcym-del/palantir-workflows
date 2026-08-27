@@ -1,0 +1,17 @@
+# Nextflow run artifacts
+.nextflow/
+.nextflow.log*
+work/
+results/
+results_test/
+
+# Synthetic smoke-test data (regenerate with bin/make_test_data.py)
+test_data/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Manifest backups written by perturbseq_report itself
+*.bak-*

@@ -1,0 +1,5 @@
+sample,prefix,dragen_path,h5ad_path,output_path,grna_whitelist,hashtag_whitelist,HTO,min_genes,max_genes,min_counts,max_counts,max_mito,dragen_runs_share_cells
+sample_1,PH20260504_1_1,/data/MDL-1856/dragen/PH20260504_1_1,/data/MDL-1856/MDL1856_analyzed_full_depth.h5ad,/data/MDL2073_QCpipeline/out,whitelists/MDL1856_grna_whitelist.csv,whitelists/MDL1856_hashtag_whitelist.csv,yes,521.7,7481,822,11480,10,yes
+sample_1,PH20260504_1_2,/data/MDL-1856/dragen/PH20260504_1_2,/data/MDL-1856/MDL1856_analyzed_full_depth.h5ad,/data/MDL2073_QCpipeline/out,whitelists/MDL1856_grna_whitelist.csv,whitelists/MDL1856_hashtag_whitelist.csv,yes,521.7,7481,822,11480,10,yes
+sample_1,PH20260504_1_3,/data/MDL-1856/dragen/PH20260504_1_3,/data/MDL-1856/MDL1856_analyzed_full_depth.h5ad,/data/MDL2073_QCpipeline/out,whitelists/MDL1856_grna_whitelist.csv,whitelists/MDL1856_hashtag_whitelist.csv,yes,521.7,7481,822,11480,10,yes
+sample_1,PH20260504_1_4,/data/MDL-1856/dragen/PH20260504_1_4,/data/MDL-1856/MDL1856_analyzed_full_depth.h5ad,/data/MDL2073_QCpipeline/out,whitelists/MDL1856_grna_whitelist.csv,whitelists/MDL1856_hashtag_whitelist.csv,yes,521.7,7481,822,11480,10,yes

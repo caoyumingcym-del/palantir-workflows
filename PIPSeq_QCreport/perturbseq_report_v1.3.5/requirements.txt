@@ -1,0 +1,20 @@
+# Core (required)
+numpy>=1.24
+pandas>=2.0
+matplotlib>=3.7
+
+# Single-cell stack (required to read .h5ad and for graph-based clustering).
+# Without these the pipeline still runs, but the transcriptome stage falls back
+# to numpy PCA + k-means and says so in the report.
+anndata>=0.9
+scanpy>=1.9
+scipy>=1.10
+scikit-learn>=1.3
+
+# Optional but recommended
+leidenalg>=0.10      # graph-based Leiden clustering
+igraph>=0.10
+harmonypy>=0.0.9     # batch correction on the embedding
+scrublet>=0.2.3      # doublet detection (a built-in fallback is used otherwise)
+pyyaml>=6.0          # --config in YAML rather than JSON
+h5py>=3.8              # required by --inspect (ships with anndata)
