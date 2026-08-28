@@ -300,6 +300,13 @@
           "description": "Where the vendored perturbseq_report package lives. Computed automatically from qc_container -- do not edit unless you know why.",
           "hidden": true,
           "fa_icon": "fas fa-folder"
+        },
+        "help": {
+          "type": "boolean",
+          "default": false,
+          "description": "Print the CLI help message and exit.",
+          "hidden": true,
+          "fa_icon": "fas fa-question-circle"
         }
       }
     }
