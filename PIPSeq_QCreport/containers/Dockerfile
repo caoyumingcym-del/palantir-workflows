@@ -47,4 +47,14 @@ RUN python3 -c "import numpy, pandas, scanpy, anndata, leidenalg, igraph, harmon
 # export), so python3 and every installed package stay reachable even when
 # an orchestrator replaces or skips ENTRYPOINT entirely.
 ENV PATH=/opt/conda/bin:/opt/conda/condabin:$PATH
+# ICA runs the container as a UID with no corresponding /etc/passwd entry
+# and no writable home directory, so anything that caches to $HOME (or
+# XDG_CACHE_HOME/XDG_CONFIG_HOME, which default to under $HOME) fails --
+# matplotlib hit this first ("mkdir -p failed for path /.config/matplotlib:
+# Permission denied") and degraded gracefully to a /tmp fallback, but
+# fontconfig's and numba's caches are less forgiving about it. /tmp is
+# writable regardless of which UID ends up running the container, so
+# pointing HOME there directly avoids the whole class of failure rather
+# than patching each library's own cache-dir override one at a time.
+ENV HOME=/tmp
 ENV PYTHONUNBUFFERED=1
