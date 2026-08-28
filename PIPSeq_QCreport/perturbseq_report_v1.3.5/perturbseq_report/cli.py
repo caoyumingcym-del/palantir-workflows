@@ -31,7 +31,7 @@ import traceback
 from pathlib import Path
 
 from .config import THRESHOLD_KEYS, ModalityConfig, build_config, decide_run_mode
-from .manifest import ManifestError, read_manifest, write_manifest_template
+from .manifest import GLOBAL_COLUMNS, ManifestError, read_manifest, write_manifest_template
 from .pipeline import PipelineError, run
 from .report import build_from_artifacts
 from .version import __version__
@@ -329,8 +329,19 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     # ------------------------------------------------------------- manifest
+    # A column named here is only ever used to LOCATE something (the h5ad,
+    # where results go). Once a CLI flag already says where that is, the
+    # manifest column is dead weight -- requiring it anyway is exactly the
+    # friction a wrapper that always passes --output-path (a Nextflow/ICA
+    # pipeline, say, which manages its own output layout) would otherwise
+    # hit on every single manifest for a column whose value it never reads.
+    required_columns = [
+        c for c in GLOBAL_COLUMNS
+        if not (c == "h5ad_path" and args.h5ad_path)
+        and not (c == "output_path" and args.output_path)
+    ]
     try:
-        manifest = read_manifest(args.manifest)
+        manifest = read_manifest(args.manifest, required_columns=required_columns)
     except ManifestError as exc:
         print(f"manifest error: {exc}", file=sys.stderr)
         return EXIT_MANIFEST
@@ -371,8 +382,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"perturbseq-report {__version__}")
         print(f"  manifest : {manifest.path}")
         print(f"  samples  : {manifest.n_samples} ({manifest.n_runs} runs)")
-        print(f"  h5ad     : {manifest.h5ad_path}")
-        print(f"  output   : {manifest.output_path}")
+        # cfg.h5ad_path/output_path are already resolved from --h5ad/--output-path
+        # by build_config() above. Prefer them over the manifest property directly:
+        # when overridden, the manifest column may not even exist (see
+        # required_columns above), and manifest.h5ad_path/output_path would raise.
+        print(f"  h5ad     : {cfg.h5ad_path if cfg.h5ad_path is not None else manifest.h5ad_path}")
+        print(f"  output   : {cfg.output_path if cfg.output_path is not None else manifest.output_path}")
         print(f"  mode     : {'QC review (explore)' if mode.explore else 'full pipeline'}"
               f" — {mode.reason}")
         for w in manifest.warnings:

@@ -140,6 +140,17 @@ class Manifest:
 
     def global_value(self, column: str) -> str:
         """The single value of a global column (validated identical on all rows)."""
+        if column not in self.df.columns:
+            # read_manifest(required_columns=...) can validly produce a Manifest
+            # where a GLOBAL_COLUMNS entry is entirely absent (the caller is
+            # overriding it some other way, e.g. --output-path). Reaching here
+            # anyway means something tried to use this column's value despite
+            # that -- a real caller bug, but still a ManifestError rather than
+            # a raw pandas KeyError, since callers already catch the former.
+            raise ManifestError(
+                f"Column {column!r} is not present in {self.path.name}, and "
+                f"nothing overrode it, so its value cannot be read."
+            )
         vals = {
             str(v).strip()
             for v in self.df[column]
@@ -615,17 +626,28 @@ def read_manifest(
     path: str | Path,
     require_paths: bool = True,
     strict: bool = False,
+    required_columns: Sequence[str] | None = None,
 ) -> Manifest:
     """Read and validate a sample manifest.
 
     Parameters
     ----------
     require_paths
-        Enforce that ``h5ad_path`` and ``output_path`` are present, non-blank
-        and identical on every row.  Turn off only for report-only rebuilds.
+        Enforce that the columns in ``required_columns`` (``h5ad_path`` and
+        ``output_path`` by default) are present, non-blank and identical on
+        every row.  Turn off only for report-only rebuilds.
     strict
         Promote warnings (partially-filled metadata columns, per-sample
         metadata disagreements) into errors.
+    required_columns
+        Which of ``GLOBAL_COLUMNS`` to actually enforce; defaults to both.
+        A caller that is going to override one of them anyway (``--h5ad``,
+        ``--output-path``) can drop it from this list, since the tool never
+        reads the corresponding manifest column once an override is given --
+        see ``cli.py``'s ``main()``, which does exactly that. The column
+        stays excluded from metadata/condition-column autodetection either
+        way (that exclusion is unconditional -- see ``metadata_columns``),
+        so this only affects whether its absence raises.
 
     Raises
     ------
@@ -658,7 +680,8 @@ def read_manifest(
     warnings_: list[str] = []
 
     if require_paths:
-        for col in GLOBAL_COLUMNS:
+        cols_to_require = GLOBAL_COLUMNS if required_columns is None else required_columns
+        for col in cols_to_require:
             if col not in df.columns:
                 raise ManifestError(
                     f"Manifest {p.name} is missing required column {col!r}. "
