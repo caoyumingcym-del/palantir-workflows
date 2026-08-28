@@ -32,15 +32,14 @@ process RUN_QC_REPORT {
     tag "$id"
     label 'process_high_memory'
     publishDir "${params.outdir}/${id}", mode: params.publish_mode, overwrite: true
-    // Required, no default (see nextflow.config) -- ICA does not reliably
-    // apply Nextflow config profiles, so a container wired up only under
+    // Read directly from a plain parameter (defaulted in nextflow.config to
+    // a public GCP image), not a profile -- ICA does not reliably apply
+    // Nextflow config profiles, so a container wired up only under
     // `-profile docker` silently never activates there and the process runs
     // on the bare scheduler node instead (which is how we found this: it
-    // failed with "python3: command not found"). A required parameter
-    // referenced directly here is the pattern this lab's other ICA-deployed
-    // Nextflow pipelines already use (see SingleCell/PIPseqDownsample's
-    // `params.qc_container`), and unlike a profile it cannot be silently
-    // skipped -- the pipeline won't launch without it.
+    // failed with "python3: command not found"). This is the pattern this
+    // lab's other ICA-deployed Nextflow pipelines already use (see
+    // SingleCell/PIPseqDownsample's `params.qc_container`).
     container { isSet(params.qc_container) ? params.qc_container : null }
 
     input:

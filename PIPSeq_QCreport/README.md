@@ -53,36 +53,27 @@ Nextflow edit, not a read-only or shared reference copy.
 python3 bin/make_test_data.py --outdir test_data
 nextflow run . -profile test
 
-# 2. Build and push the container image once (see Environments below):
-cd containers && export AWS_REGION=... ECR_REGISTRY=... && ./build_and_push.sh
-cd ..
-QC_IMAGE=<the image reference build_and_push.sh printed>
-
-# 3. On your own data, single manifest, first pass (QC review):
-nextflow run . -profile docker --qc_container "$QC_IMAGE" \
-    --manifest /path/to/sample_manifest.csv
+# 2. On your own data, single manifest, first pass (QC review). qc_container
+#    already defaults to a published, public image -- no setup needed:
+nextflow run . -profile docker --manifest /path/to/sample_manifest.csv
 
 #    ...look at results/<manifest-name>/analysis_outputs/qc_explore.html,
 #    edit thresholds in the manifest if needed, then run the identical
 #    command again for the full report:
-nextflow run . -profile docker --qc_container "$QC_IMAGE" \
-    --manifest /path/to/sample_manifest.csv
+nextflow run . -profile docker --manifest /path/to/sample_manifest.csv
 
-# 4. Skip the review step entirely (batch jobs / re-runs of a known experiment):
-nextflow run . -profile docker --qc_container "$QC_IMAGE" \
-    --manifest /path/to/sample_manifest.csv --mode auto
+# 3. Skip the review step entirely (batch jobs / re-runs of a known experiment):
+nextflow run . -profile docker --manifest /path/to/sample_manifest.csv --mode auto
 
-# 5. Several manifests at once, one Nextflow task each, run in parallel:
-nextflow run . -profile docker --qc_container "$QC_IMAGE" \
-    --manifest 'manifests/*.csv' --mode auto
+# 4. Several manifests at once, one Nextflow task each, run in parallel:
+nextflow run . -profile docker --manifest 'manifests/*.csv' --mode auto
 ```
 
 `-profile docker` is what makes Nextflow actually run each task inside
-`docker run`; `--qc_container` is *which* image it uses (see Environments
-below for why these are two separate things, and for conda/bare-metal
-alternatives that don't need either). Add `-resume` as needed. `-profile
-test` and real-data runs can be combined with `docker`/`conda`, e.g.
-`-profile test,docker`.
+`docker run`; `--qc_container` (defaulted, see Environments below) is
+*which* image it uses -- override it only if you've built and pushed your
+own copy. Add `-resume` as needed. `-profile test` and real-data runs can be
+combined with `docker`/`conda`, e.g. `-profile test,docker`.
 
 ## Inputs
 
@@ -100,9 +91,10 @@ test` and real-data runs can be combined with `docker`/`conda`, e.g.
   work directory and get published cleanly under `--outdir`). It still has to
   be present and non-blank for the manifest to validate, since the CLI
   requires it, but its value doesn't matter here.
-- **`--qc_container`** (required for any containerized run -- docker,
-  singularity, or ICA): the image every step runs in. No default on purpose;
-  see Environments below.
+- **`--qc_container`** (for `-profile docker`/`singularity`/ICA): the image
+  every step runs in. Defaults to a published, public image (Google Artifact
+  Registry) -- see Environments below; only set this yourself if you've
+  rebuilt and pushed your own copy.
 
 ## Outputs
 
@@ -132,7 +124,7 @@ for what each one does). The most common:
 
 | param                 | CLI flag equivalent      | notes |
 |-----------------------|---------------------------|-------|
-| `--qc_container`      | n/a (Nextflow `container` directive) | required for docker/singularity/ICA; see Environments |
+| `--qc_container`      | n/a (Nextflow `container` directive) | defaulted (public GCP image); see Environments |
 | `--mode`              | `--explore` / `--auto-thresholds` | see above |
 | `--min_genes` etc.    | `--min-genes` etc.        | the 5 QC thresholds |
 | `--config`             | `--config`               | JSON/YAML config-override file |
@@ -146,17 +138,23 @@ for what each one does). The most common:
 
 ## Environments
 
-- **Docker** (`-profile docker`): build and push the image once with
-  [`containers/build_and_push.sh`](containers/build_and_push.sh) (see
-  [`containers/SETUP.md`](containers/SETUP.md) for prerequisites), then pass
-  the pushed reference as `--qc_container` on every run. The image is
-  **not** hardcoded in `nextflow.config` -- `--qc_container` is a required
-  parameter that `RUN_QC_REPORT`'s `container` directive reads directly. This
-  is deliberate: `-profile docker` only tells Nextflow to actually invoke
+- **Docker** (`-profile docker`): `--qc_container` already defaults (see
+  `nextflow.config`) to
+  `us-central1-docker.pkg.dev/methods-dev-lab/pipseq-qcreport/pipseq-qcreport:1.3.5`
+  -- a Google Artifact Registry image built from `containers/Dockerfile`,
+  made deliberately **public** (verified with an actual unauthenticated
+  `docker pull`) so ICA can pull it with zero credentials configured, the
+  same way it would pull a public Docker Hub image. It is **not** hardcoded
+  via a profile -- `qc_container` is a plain parameter that
+  `RUN_QC_REPORT`'s `container` directive reads directly. That's
+  deliberate: `-profile docker` only tells Nextflow to actually invoke
   `docker run`; it does not by itself say *which* image, and a hardcoded
-  image tucked inside a profile block turned out to be exactly what silently
-  never activated when this pipeline was first run on ICA (see "Running on
-  ICA" below).
+  image tucked inside a profile block turned out to be exactly what
+  silently never activated when this pipeline was first run on ICA (see
+  "Running on ICA" below). Rebuild and republish with
+  [`containers/build_and_push_gcp.sh`](containers/build_and_push_gcp.sh);
+  see [`containers/SETUP.md`](containers/SETUP.md) for that and the AWS ECR
+  alternative.
 - **Singularity** (`-profile singularity`): build a `.sif` from the pushed
   Docker image (see comment in `nextflow.config`) and pass its path as
   `--qc_container`.
@@ -178,15 +176,14 @@ pipeline itself.
 
 **Two things that are easy to miss on ICA specifically:**
 
-1. **`qc_container` is required and has no default**, for the reason above:
-   ICA does not reliably apply `-profile docker`, so paste an image
-   reference into the `qc_container` field every time you launch (or bake
-   it into a saved input template if ICA supports one). Two ways to get
-   that reference -- see `containers/SETUP.md` for both in full: push to
-   your own AWS ECR (`build_and_push.sh`), or, if you don't have an AWS
-   account for this, build locally and upload the image as a TAR directly
-   into ICA's own Docker Repository (System Settings) -- no AWS account
-   needed either way.
+1. **`qc_container` is read directly by the process, not a profile**, for
+   the reason above: ICA does not reliably apply `-profile docker`. It
+   already defaults to a public GCP image (see Environments), so most
+   launches don't need to touch this field at all. Only override it if
+   you've rebuilt and pushed your own copy -- `containers/SETUP.md` covers
+   rebuilding to GCP, an AWS ECR alternative, and (if neither cloud account
+   is available to you) uploading a TAR directly into ICA's own Docker
+   Repository.
 2. **ICA's git-based pipeline import pins to a specific commit, not a
    branch.** Pushing a new commit to this branch does **not** update an
    already-imported ICA pipeline -- ICA has to be told to re-import at the

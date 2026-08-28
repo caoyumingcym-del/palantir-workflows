@@ -9,7 +9,7 @@
       "title": "Input/output options",
       "type": "object",
       "fa_icon": "fas fa-terminal",
-      "description": "The two options you must set. Everything else has a working default.",
+      "description": "manifest is the one thing you must set. qc_container has a working public default -- only change it if you've rebuilt and pushed your own image.",
       "required": ["manifest", "qc_container"],
       "properties": {
         "manifest": {
@@ -22,8 +22,9 @@
         },
         "qc_container": {
           "type": "string",
+          "default": "us-central1-docker.pkg.dev/methods-dev-lab/pipseq-qcreport/pipseq-qcreport:1.3.5",
           "description": "Container image to run every step in.",
-          "help_text": "No default on purpose: ICA (and most cloud/container-native executors) does not reliably apply Nextflow config profiles, so a container wired up only under -profile docker can silently never activate -- this parameter is read directly by RUN_QC_REPORT's container directive instead. Build it from containers/Dockerfile (see containers/build_and_push.sh), push it to a registry your executor can pull from (e.g. <account>.dkr.ecr.<region>.amazonaws.com/pipseq-qcreport:1.3.5), and pass that reference here. Leave blank only for a genuinely container-free run (conda or bare metal with the dependencies already installed).",
+          "help_text": "Defaults to the published image (Google Artifact Registry, public -- verified pullable with zero credentials, so ICA and any other executor can reach it like a public Docker Hub image), built from containers/Dockerfile via containers/build_and_push_gcp.sh. This isn't read via a Nextflow profile -- ICA (and most cloud/container-native executors) does not reliably apply profiles, so RUN_QC_REPORT's container directive reads this parameter directly instead. Only override it if you've rebuilt and pushed your own copy (containers/SETUP.md covers both the GCP and AWS ECR paths). Leave blank only for a genuinely container-free run (conda or bare metal with the dependencies already installed).",
           "fa_icon": "fas fa-box"
         },
         "outdir": {

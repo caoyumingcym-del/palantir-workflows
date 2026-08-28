@@ -3,23 +3,55 @@
 The pipeline reads its container image from `--qc_container` (see
 `nextflow.config`) rather than a Nextflow profile -- ICA does not reliably
 apply profiles, so a container only wired up under `-profile docker` can
-silently never activate on it. You build the image once (and again after
-any change to `perturbseq_report_v1.3.5/` or `envs/environment.yml`), get it
-somewhere your executor can pull it from, and pass that reference to every
-run. Two ways to do that -- pick whichever matches how your ICA project is
-set up (ask a colleague already running an ICA pipeline here if unsure):
+silently never activate on it (confirmed: this pipeline's first ICA run had
+no container at all and failed on `python3: command not found`). You build
+the image once (and again after any change to `perturbseq_report_v1.3.5/` or
+`envs/environment.yml`), get it somewhere your executor can pull it from,
+and pass that reference as `--qc_container`.
 
-- **Your own AWS account's ECR** -- see "Build and push" below. Needs AWS
-  credentials and IAM permissions, and ICA's compute environment must be
-  authorized to pull from that account.
-- **ICA's own built-in Docker Repository** (System Settings) -- see
-  "Uploading directly to ICA" below. No AWS account needed at all: you
-  build locally, export the image as a TAR, and upload it through ICA's own
-  UI. This is the path to use if, like `SingleCell/PIPseqDownsample`'s
-  author, you don't have (or don't want to set up) your own AWS account for
-  this.
+## Currently in use: Google Artifact Registry (public)
 
-## Prerequisites
+`nextflow.config`'s default `qc_container` points at:
+
+```
+us-central1-docker.pkg.dev/methods-dev-lab/pipseq-qcreport/pipseq-qcreport:1.3.5
+```
+
+This repository is deliberately **public** (`allUsers` granted
+`roles/artifactregistry.reader`) -- ICA has no GCP credentials configured, so
+a private image would be unpullable. Verified with an actual unauthenticated
+`docker pull` (empty `DOCKER_CONFIG`, no `gcloud` credential helper) that
+this works exactly like a public Docker Hub image. Only the container's
+dependency list is exposed this way, not any data.
+
+To rebuild and republish after a change:
+
+```bash
+cd PIPSeq_QCreport/containers
+export GCP_PROJECT=methods-dev-lab      # defaults shown; override if needed
+export GCP_REGION=us-central1
+./build_and_push_gcp.sh                 # tags the image 1.3.5
+# ./build_and_push_gcp.sh v2            # or pass your own tag
+```
+
+This authenticates Docker via `gcloud`, creates the Artifact Registry
+repository if it doesn't already exist, builds, pushes, re-applies the
+public IAM binding, and verifies an unauthenticated pull actually succeeds
+before printing the final image reference. Needs the `gcloud` CLI
+authenticated with permission to create Artifact Registry repositories and
+set IAM policy in the target project.
+
+If you rebuild with a different tag, update `qc_container`'s default in
+`nextflow.config` (and in `inputForm.json` / `nextflow_schema.json`) to
+match, or just pass `--qc_container` explicitly on each run.
+
+## Alternative: your own AWS account's ECR
+
+Useful if GCP isn't an option for you, or you'd rather keep the image
+private. Mirrors `SingleCell/PIPseqDownsample/docker`'s convention elsewhere
+in this repo.
+
+### Prerequisites
 
 - Docker, and the AWS CLI authenticated (`aws sts get-caller-identity`
   should succeed).
@@ -28,9 +60,12 @@ set up (ask a colleague already running an ICA pipeline here if unsure):
   in the target account/region.
 - Which account/region to use -- ask whoever manages the ECR registry your
   ICA project's compute environment can actually pull from. There is no
-  hardcoded account ID in this repo; each deployment sets its own.
+  hardcoded account ID in this repo; each deployment sets its own. Unlike
+  the GCP path above, a private ECR repository also needs ICA's compute
+  environment to actually be authorized to pull from that account --
+  confirm that's already true for your project before relying on this path.
 
-## Build and push
+### Build and push
 
 ```bash
 export AWS_REGION=us-east-1
@@ -42,9 +77,9 @@ cd PIPSeq_QCreport/containers
 
 This authenticates Docker to ECR, creates the `pipseq-qcreport` repository if
 it doesn't already exist, builds from `Dockerfile`, and pushes. It prints the
-full image reference at the end -- that's the value to paste into
-`qc_container` (a Nextflow CLI flag, or the `qc_container` field on ICA's
-launch form).
+full image reference at the end -- that's the value to pass as
+`--qc_container` (or paste into ICA's `qc_container` field, overriding the
+GCP default).
 
 ## Manual build (no push)
 

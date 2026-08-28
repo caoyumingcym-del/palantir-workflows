@@ -10,7 +10,7 @@
       "id": "section_manifest",
       "type": "section",
       "label": "Required inputs",
-      "helpText": "The two inputs you must provide. Everything below has a working default."
+      "helpText": "manifest is the one thing you must provide. qc_container has a working public default -- only change it if you've rebuilt and pushed your own image."
     },
     {
       "id": "manifest",
@@ -27,8 +27,8 @@
       "id": "qc_container",
       "type": "textbox",
       "label": "qc_container",
-      "helpText": "Container image to run every step in (e.g. <account>.dkr.ecr.<region>.amazonaws.com/pipseq-qcreport:1.3.5). No default on purpose: ICA does not apply Nextflow profiles, so a container wired up only under -profile docker would silently never activate. Build it from containers/Dockerfile (see containers/build_and_push.sh) and paste the pushed image reference here.",
-      "value": ""
+      "helpText": "Container image to run every step in. Defaults to the published image (Google Artifact Registry, public -- no credentials needed to pull it), rebuilt from containers/Dockerfile via containers/build_and_push_gcp.sh. Only change this if you've rebuilt and pushed your own copy (containers/SETUP.md covers both GCP and AWS ECR paths).",
+      "value": "us-central1-docker.pkg.dev/methods-dev-lab/pipseq-qcreport/pipseq-qcreport:1.3.5"
     },
     {
       "id": "section_input_output_options",
