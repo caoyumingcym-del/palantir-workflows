@@ -10,10 +10,17 @@
 # modules/local/run_qc_report.nf's pipelineDir fallback expects it whenever
 # --qc_container is set -- keep that path in sync if you change this COPY.
 #
-# Relies on the base image's own /usr/local/bin/_entrypoint.sh (documented at
-# https://github.com/mamba-org/micromamba-docker), which activates the target
-# env for any CMD it is given -- so `docker run <image> python3 ...` (which is
-# how Nextflow invokes it) runs with the env already on PATH.
+# Does NOT rely on the base image's own /usr/local/bin/_entrypoint.sh
+# (documented at https://github.com/mamba-org/micromamba-docker) to put the
+# conda env on PATH at runtime -- ICA's execution engine overrides the
+# container ENTRYPOINT with /usr/bin/env (visible in its own task log:
+# "The container ENTRYPOINT was overridden ... to ensure correct Nextflow
+# task execution"), which skips that script entirely and produces
+# "python3: command not found" despite the image being pulled and used
+# correctly. Confirmed by reproducing locally:
+#   docker run --entrypoint /usr/bin/env pipseq-qcreport:1.3.5 python3 --version
+# PATH is set explicitly below via ENV instead, which is baked into the
+# image's own metadata and applies unconditionally -- entrypoint or not.
 
 FROM mambaorg/micromamba:1.5-jammy
 
@@ -36,4 +43,8 @@ USER $MAMBA_USER
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
 RUN python3 -c "import numpy, pandas, scanpy, anndata, leidenalg, igraph, harmonypy, scrublet, yaml; print('perturbseq_report dependency check OK')"
 
+# Baked into image metadata (unlike the entrypoint script's runtime PATH
+# export), so python3 and every installed package stay reachable even when
+# an orchestrator replaces or skips ENTRYPOINT entirely.
+ENV PATH=/opt/conda/bin:/opt/conda/condabin:$PATH
 ENV PYTHONUNBUFFERED=1
