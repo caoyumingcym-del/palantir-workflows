@@ -88,9 +88,9 @@ combined with `docker`/`conda`, e.g. `-profile test,docker`.
   pipeline changes nothing about that.
 - The manifest's own `output_path` column is **ignored** by this pipeline
   (overridden with `--output-path` so results land inside each task's Nextflow
-  work directory and get published cleanly under `--outdir`). It still has to
-  be present and non-blank for the manifest to validate, since the CLI
-  requires it, but its value doesn't matter here.
+  work directory and get published cleanly under `--outdir`) and, as of the
+  underlying tool's `--output-path`/`--h5ad` override support, doesn't need
+  to be present in the manifest at all.
 - **`--qc_container`** (for `-profile docker`/`singularity`/ICA): the image
   every step runs in. Defaults to a published, public image (Google Artifact
   Registry) -- see Environments below; only set this yourself if you've
