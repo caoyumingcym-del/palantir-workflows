@@ -185,14 +185,17 @@ pipeline itself.
    is available to you) uploading a TAR directly into ICA's own Docker
    Repository.
 2. **ICA's git-based pipeline import pins to a specific commit, not a
-   branch.** Pushing a new commit to this branch does **not** update an
-   already-imported ICA pipeline -- ICA has to be told to re-import at the
-   new commit (see `SingleCell/PIPseqDownsample/ica_tools/export_pipeline_to_ica.py`
-   elsewhere in this repo for a script that automates that against this
-   same ICA project's API; there is no equivalent script here yet). Until
-   there is, re-import manually in the ICA UI after pushing changes, and
-   confirm the commit shown in the imported pipeline's details matches
-   what you just pushed before relying on a run.
+   branch, and the ICA UI doesn't let you edit that commit after the
+   initial import.** Pushing a new commit to this branch does **not**
+   update an already-imported ICA pipeline. [`ica_tools/`](ica_tools/)
+   automates re-importing at the current commit (adapted from
+   `SingleCell/PIPseqDownsample/ica_tools/export_pipeline_to_ica.py`
+   elsewhere in this repo, which uses the same API the UI's "Import from
+   Git" wizard does) -- see `ica_tools/README.md` for one-time setup, then
+   `python3 ica_tools/export_pipeline_to_ica.py` after every commit you
+   want ICA to pick up. Each run creates a new pipeline entry rather than
+   updating one in place, so confirm you're launching the one that matches
+   your latest commit.
 
 ## Resources
 
