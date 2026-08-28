@@ -11,10 +11,12 @@ import os
 API_URL = 'https://ica.illumina.com/ica/rest/api'
 
 # Fill in with your own ICA project name(s) -> project ID. Find a project ID
-# either in its URL in the ICA web UI, or via `icav2 projects list` if you
-# have the icav2 CLI configured.
+# either in its URL in the ICA web UI, in the URN shown under Project
+# Settings > Details (urn:ilmn:ica:project:<id>#<name> -- the <id> part is
+# what goes here), or via `icav2 projects list` if you have the icav2 CLI
+# configured.
 PROJECT_NAMES_AND_IDS = {
-    # 'My ICA Project': '00000000-0000-0000-0000-000000000000',
+    'MDL Single Cell Dev': 'de460091-a137-4848-8e23-c59b851d7425',
 }
 
 

@@ -15,13 +15,16 @@ also true of the sibling script this is based on.
 
 Before running, fill in:
   - ica_tools/ica_common.py:PROJECT_NAMES_AND_IDS -- your ICA project(s).
-  - GIT_CREDENTIAL_UUID below -- an ICA git credential authorized to read
-    REPOSITORY_URL. Project Settings -> Credentials (or similar) in the ICA
-    UI; create one if none exists yet for this repository. If
-    REPOSITORY_URL is a public repo, this may not be required at all --
-    worth trying with an empty credential first if you hit permission
-    trouble creating one.
   - ~/.icav2/api_key.txt -- your ICA API key (see ica_common.load_api_key).
+
+GIT_CREDENTIAL_UUID below can be left empty: per Illumina's own docs, a git
+credential is only needed for PRIVATE repositories, and REPOSITORY_URL
+(caoyumingcym-del/palantir-workflows) is public -- confirmed by fetching a
+file from it with no authentication at all. If the import ever fails
+complaining about repository access, create one at System Settings >
+Credentials > Create > Git Credential in the ICA UI (a GitHub Personal
+Access Token; `repo` scope only matters for a private repo) and paste its
+ID in.
 
 Usage:
     python3 export_pipeline_to_ica.py
@@ -55,12 +58,15 @@ current_git_commit_id_short = subprocess.check_output(['git', 'rev-parse', '--sh
 current_git_commit_message = subprocess.check_output(['git', 'log', '-1', '--pretty=%B']).decode().strip().split('\n')[0].strip()
 
 if not GIT_CREDENTIAL_UUID:
-    print('ERROR: GIT_CREDENTIAL_UUID is not set at the top of this script.')
-    print('Find or create one in the ICA UI under this project\'s git')
-    print(f'credentials, authorized to read {REPOSITORY_URL}, then paste its')
-    print('ID in. If the repository is public, try an empty string there')
-    print('first -- it may not be required at all.')
-    exit(1)
+    # Per Illumina's own docs, a git credential is only needed for PRIVATE
+    # repositories -- REPOSITORY_URL (caoyumingcym-del/palantir-workflows) is
+    # public, so this is expected to be empty most of the time, not an error.
+    print('NOTE: GIT_CREDENTIAL_UUID is empty -- proceeding without one, ')
+    print(f'since {REPOSITORY_URL} is public and shouldn\'t need one. If the')
+    print('import fails complaining about repository access, create one at')
+    print('System Settings > Credentials > Create > Git Credential in the')
+    print('ICA UI and paste its ID in here.')
+    print('')
 
 if not os.path.isfile(INPUT_FORM_PATH):
     print(f'ERROR: input form file not found at {INPUT_FORM_PATH}')

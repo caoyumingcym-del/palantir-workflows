@@ -16,19 +16,20 @@ in this repo; see that file/its own docs for the pattern this is based on.
    ID to `PROJECT_NAMES_AND_IDS`. Find the ID in the project's URL in the
    ICA web UI, or via `icav2 projects list` if you have the `icav2` CLI set
    up.
-3. **Git credential**: open `export_pipeline_to_ica.py` and set
-   `GIT_CREDENTIAL_UUID` to an ICA git credential authorized to read
-   `https://github.com/caoyumingcym-del/palantir-workflows` (find/create one
-   under this project's credentials in the ICA UI). If that repository is
-   public, try leaving it as an empty string first -- a credential may not
-   be required at all for a public repo.
+3. **Git credential**: leave `GIT_CREDENTIAL_UUID` as `''` -- per Illumina's
+   own docs, this is only needed for private repositories, and
+   `caoyumingcym-del/palantir-workflows` is confirmed public (fetching a
+   file from it needs no authentication at all). If the import ever fails
+   complaining about repository access, create one at **System Settings >
+   Credentials > Create > Git Credential** (a GitHub Personal Access Token)
+   and paste its ID into `GIT_CREDENTIAL_UUID`.
 
-None of the above are committed as filled-in values (the API key
-deliberately lives outside the repo entirely; the project ID and git
-credential UUID are placeholders in these files until you fill them in
-locally) -- fill them in on your own machine, don't push real values back
-into `PROJECT_NAMES_AND_IDS`/`GIT_CREDENTIAL_UUID` unless you're sure that's
-intended for whoever else pulls this branch.
+The API key deliberately lives outside the repo entirely -- never commit
+`~/.icav2/api_key.txt` or paste its contents anywhere. `PROJECT_NAMES_AND_IDS`
+is a placeholder until you fill it in; it isn't a secret (your colleague's
+own script commits real project IDs the same way), but decide deliberately
+whether committing yours is meant for just you or for whoever else pulls
+this branch.
 
 ## Usage
 
