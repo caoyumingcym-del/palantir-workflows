@@ -203,6 +203,18 @@ METRIC_FILE_PATTERNS: tuple[str, ...] = (
     "{prefix}.metrics.csv",
     "{prefix}_metrics.csv",
     "metrics_summary.csv",
+    # DRAGEN sometimes writes a longer per-library filename than the
+    # manifest's own prefix, e.g. a hashing/feature-library tag appended
+    # ("HR20260218_1_hashingABCD.scRNA_metrics.csv" for manifest prefix
+    # "HR20260218_1"). Tried after the exact-match patterns above, and
+    # requires a delimiter (-, _, or .) immediately after the prefix -- a
+    # bare "{prefix}*" would also match an unrelated run whose prefix is a
+    # plain string-prefix of this one (e.g. "HR20260218_1" matching
+    # "HR20260218_10_...").
+    "{prefix}[-_.]*.scRNA_metrics.csv",
+    "{prefix}[-_.]*.scrna_metrics.csv",
+    "{prefix}[-_.]*.metrics.csv",
+    "{prefix}[-_.]*_metrics.csv",
     "*.scRNA_metrics.csv",
     "*metrics_summary.csv",
 )
