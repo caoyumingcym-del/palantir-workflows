@@ -102,6 +102,16 @@ combined with `docker`/`conda`, e.g. `-profile test,docker`.
   this blank -- same for `grna_whitelist`/`hashtag_whitelist`, which don't
   have an equivalent override yet and are subject to the same limitation on
   ICA if you use them.
+- **`--dragen_root`** (optional, for the report's Sequencing QC section):
+  the same fix as `--h5ad`, for the manifest's per-run `prefix`/`dragen_path`
+  columns instead of its (manifest-wide) `h5ad_path`. Point it at a directory
+  containing every run's DRAGEN output subfolder, each named the same way
+  the manifest's own `dragen_path` values already end (their basename) --
+  this overrides every run's `dragen_path` to `<dragen_root>/<that
+  basename>`. Unlike `h5ad`, this is genuinely optional: leaving it blank on
+  ICA just means the "Sequencing QC" section (upstream DRAGEN read/mapping
+  metrics) is skipped -- transcriptome, guide, hashtag and perturbation
+  analysis are all unaffected either way.
 - **`--qc_container`** (for `-profile docker`/`singularity`/ICA): the image
   every step runs in. Defaults to a published, public image (Google Artifact
   Registry) -- see Environments below; only set this yourself if you've
@@ -146,6 +156,7 @@ for what each one does). The most common:
 | param                 | CLI flag equivalent      | notes |
 |-----------------------|---------------------------|-------|
 | `--h5ad`              | `--h5ad`                  | required on ICA -- see Inputs above |
+| `--dragen_root`       | `--dragen-root`           | optional; enables the Sequencing QC section on ICA -- see Inputs above |
 | `--qc_container`      | n/a (Nextflow `container` directive) | defaulted (public GCP image); see Environments |
 | `--mode`              | `--explore` / `--auto-thresholds` | see above |
 | `--min_genes` etc.    | `--min-genes` etc.        | the 5 QC thresholds |
@@ -207,8 +218,11 @@ pipeline itself.
    surfaced as `pipeline error: h5ad file not found: <path>`, reproducibly,
    with both a relative and an absolute path in that column, and disappeared
    entirely once the file was attached through the `h5ad` field instead. The
-   same limitation applies to `grna_whitelist`/`hashtag_whitelist` if you use
-   them, which don't have an equivalent override field yet.
+   same limitation applies to `dragen_path` (the `dragen_root` field fixes
+   it -- see Inputs above; it just means a skipped "Sequencing QC" section,
+   not a failed run, if you skip it) and to `grna_whitelist`/
+   `hashtag_whitelist` if you use them, which don't have an equivalent
+   override field yet.
 2. **`qc_container` is read directly by the process, not a profile**, for
    the reason above: ICA does not reliably apply `-profile docker`. It
    already defaults to a public GCP image (see Environments), so most

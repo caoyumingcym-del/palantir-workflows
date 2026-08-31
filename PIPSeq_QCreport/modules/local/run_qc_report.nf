@@ -43,7 +43,7 @@ process RUN_QC_REPORT {
     container { isSet(params.qc_container) ? params.qc_container : null }
 
     input:
-    tuple val(id), path(manifest_dir), val(manifest_name), path(h5ad_file)
+    tuple val(id), path(manifest_dir), val(manifest_name), path(h5ad_file), path(dragen_root_dir)
 
     output:
     tuple val(id), path("analysis_outputs"), emit: analysis_outputs
@@ -73,6 +73,12 @@ process RUN_QC_REPORT {
     // --h5ad wasn't given, and referencing an empty path collection in the
     // flag itself is what isSet() here is precisely avoiding.
     if (isSet(params.h5ad)) flags << "--h5ad ${h5ad_file}"
+
+    // Same story, for the manifest's per-run dragen_path columns. Without
+    // this, "Sequencing QC" is skipped non-fatally on a platform that
+    // doesn't mount project data into the task -- everything else in the
+    // report is unaffected either way.
+    if (isSet(params.dragen_root)) flags << "--dragen-root ${dragen_root_dir}"
 
     if (isSet(params.min_genes))  flags << "--min-genes ${params.min_genes}"
     if (isSet(params.max_genes))  flags << "--max-genes ${params.max_genes}"

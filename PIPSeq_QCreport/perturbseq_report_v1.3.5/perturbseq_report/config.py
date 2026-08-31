@@ -659,6 +659,12 @@ class PipelineConfig:
     manifest_path: Path | None = None
     output_path: Path | None = None
     h5ad_path: Path | None = None
+    # Overrides every run's dragen_path with `dragen_root / <basename of the
+    # manifest's own dragen_path value>` -- see Manifest.dragen_runs() and
+    # cli.py's --dragen-root. Needed on platforms that don't mount a
+    # project's data tree into the task container, the same reason h5ad_path
+    # above exists.
+    dragen_root: Path | None = None
 
     # Randomly subsample to at most this many cells straight after loading.
     # A pragmatic escape hatch: it lets a very large experiment produce a
@@ -886,7 +892,7 @@ def build_config(
         kwargs[name] = cls(**clean)
 
     for k, v in top.items():
-        if k in ("manifest_path", "output_path", "h5ad_path") and v is not None:
+        if k in ("manifest_path", "output_path", "h5ad_path", "dragen_root") and v is not None:
             v = Path(v)
         if k in ("condition_columns", "stages") and v is not None:
             v = tuple(v)

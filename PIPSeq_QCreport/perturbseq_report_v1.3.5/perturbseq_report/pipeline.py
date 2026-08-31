@@ -539,7 +539,7 @@ def run_with_adata(
     # recover, and searching would just produce a confusing "found unexpected
     # hashtag data" note for an experiment that never had any.
     if not split.hto.present and manifest.declares_hto() is not False:
-        dragen_runs_for_hto = manifest.dragen_runs()
+        dragen_runs_for_hto = manifest.dragen_runs(root_override=cfg.dragen_root)
         if dragen_runs_for_hto:
             hto_target_obs_names = [str(x) for x in split.gex.obs.index]
             # A sample with more than one dragen run needs to know whether
@@ -707,7 +707,7 @@ def run_with_adata(
 
     # ------------------------------------------------------------- seq QC
     step = time.time()
-    runs = manifest.dragen_runs()
+    runs = manifest.dragen_runs(root_override=cfg.dragen_root)
     sm = None            # bound unconditionally: the downsampling check below
                          # runs with or without upstream metrics
     if runs:

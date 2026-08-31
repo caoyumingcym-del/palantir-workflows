@@ -35,6 +35,17 @@
       "maxValues": 1
     },
     {
+      "id": "dragen_root",
+      "type": "data",
+      "label": "DRAGEN output directory",
+      "helpText": "Optional, for the report's 'Sequencing QC' section (upstream DRAGEN read/mapping metrics) -- everything else in the report works without it. Select the directory that CONTAINS every run's DRAGEN output subfolder (one per manifest row's prefix/dragen_path), each named the same way the manifest's own dragen_path values already end. Needed for the same reason as the h5ad field above: this platform does not mount a project's data tree into the running pipeline, so the manifest's own dragen_path values resolve to nothing on their own. Leaving this blank just means the Sequencing QC section is skipped -- it is not an error.",
+      "dataFilter": {
+        "dataType": "directory"
+      },
+      "minValues": 0,
+      "maxValues": 1
+    },
+    {
       "id": "qc_container",
       "type": "textbox",
       "label": "qc_container",

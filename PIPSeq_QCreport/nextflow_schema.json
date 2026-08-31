@@ -27,6 +27,13 @@
           "help_text": "Needed on ICA and similar platforms that don't mount a project's data tree into the task container -- a path typed into the manifest (relative or absolute) resolves to nothing there; only a file passed as an actual pipeline input (this one) gets staged in. Leave blank on a local/HPC run where the manifest's own h5ad_path is already reachable from wherever the task executes.",
           "fa_icon": "fas fa-dna"
         },
+        "dragen_root": {
+          "type": "string",
+          "format": "directory-path",
+          "description": "Directory containing every run's DRAGEN output subfolder, for the report's Sequencing QC section.",
+          "help_text": "Optional -- everything else in the report works without it. Each subfolder must be named the same way the manifest's own dragen_path values already end (their basename); this overrides every run's dragen_path to <this>/<that basename>, for the same reason --h5ad exists (this platform doesn't mount project data into the task, so the manifest's own dragen_path values resolve to nothing on their own). Leaving this blank just skips the Sequencing QC section -- not an error.",
+          "fa_icon": "fas fa-chart-bar"
+        },
         "qc_container": {
           "type": "string",
           "default": "us-central1-docker.pkg.dev/methods-dev-lab/pipseq-qcreport/pipseq-qcreport:1.3.5",

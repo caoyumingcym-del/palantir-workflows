@@ -51,6 +51,10 @@ def helpMessage() {
       --h5ad PATH             override the manifest's h5ad_path column -- needed
                               on platforms (ICA) that don't mount arbitrary
                               manifest-referenced paths into the task container
+      --dragen_root DIR       directory holding every run's DRAGEN output
+                              subfolder (each named like the manifest's own
+                              dragen_path values) -- same reason as --h5ad;
+                              without it, "Sequencing QC" is skipped, non-fatally
       --min_genes, --max_genes, --min_counts, --max_counts, --max_mito
       --config PATH           JSON/YAML file of perturbseq_report config overrides
       --counts_layer NAME     read raw counts from adata.layers[NAME] instead of X
@@ -130,7 +134,19 @@ workflow {
         ? Channel.fromPath(params.h5ad, checkIfExists: true)
         : Channel.value([])
 
-    RUN_QC_REPORT(manifest_inputs.combine(h5ad_ch))
+    // Same story as h5ad_ch, for the manifest's (per-row) dragen_path
+    // columns instead of its (manifest-wide) h5ad_path: stage one directory
+    // that contains every run's DRAGEN output subfolder, and the module
+    // passes it as --dragen-root, which replaces each run's dragen_path
+    // with <this>/<basename of that run's own dragen_path value>. Without
+    // it, the "Sequencing QC" report section is silently skipped on ICA --
+    // non-fatal (transcriptome/guide/hashtag/perturbation analysis are
+    // unaffected either way), but avoidable.
+    dragen_root_ch = params.dragen_root
+        ? Channel.fromPath(params.dragen_root, checkIfExists: true)
+        : Channel.value([])
+
+    RUN_QC_REPORT(manifest_inputs.combine(h5ad_ch).combine(dragen_root_ch))
 
     RUN_QC_REPORT.out.report
         .ifEmpty { log.info "No manifest reached the report stage in this run (all explore-only, or all failed)." }
