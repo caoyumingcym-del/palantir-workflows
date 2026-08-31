@@ -9,7 +9,7 @@
       "title": "Input/output options",
       "type": "object",
       "fa_icon": "fas fa-terminal",
-      "description": "manifest is the one thing you must set. qc_container has a working public default -- only change it if you've rebuilt and pushed your own image.",
+      "description": "manifest is the one thing you must set. h5ad is effectively required too on platforms that don't mount a project's data tree into the task (see its own description). qc_container has a working public default -- only change it if you've rebuilt and pushed your own image.",
       "required": ["manifest", "qc_container"],
       "properties": {
         "manifest": {
@@ -17,8 +17,15 @@
           "format": "file-path",
           "mimetype": "text/csv",
           "description": "Sample manifest CSV/TSV.",
-          "help_text": "Points at the sequencing data (h5ad_path) and where results go (output_path is ignored by this pipeline -- see 'outdir' instead). Also carries the optional gRNA/hashtag whitelist paths and, once filled in, the five QC thresholds below. A run that reaches the QC stage writes those thresholds back into this file (with a timestamped backup made first), so pick a manifest that lives somewhere you're fine having edited -- not a read-only reference copy. This field also accepts a glob (e.g. 'manifests/*.csv') to launch one parallel task per matching file, though a single-file picker UI may not offer a way to type a glob -- use the CLI or 'enter path manually' option if your launcher only lets you browse to one file.",
+          "help_text": "Where results go (output_path is ignored by this pipeline -- see 'outdir' instead). Also carries the optional gRNA/hashtag whitelist paths and, once filled in, the five QC thresholds below. A run that reaches the QC stage writes those thresholds back into this file (with a timestamped backup made first), so pick a manifest that lives somewhere you're fine having edited -- not a read-only reference copy. This field also accepts a glob (e.g. 'manifests/*.csv') to launch one parallel task per matching file, though a single-file picker UI may not offer a way to type a glob -- use the CLI or 'enter path manually' option if your launcher only lets you browse to one file. Its h5ad_path column locates the data only when nothing overrides it -- see 'h5ad' below, needed on platforms that don't mount arbitrary manifest-referenced paths into the task.",
           "fa_icon": "fas fa-file-csv"
+        },
+        "h5ad": {
+          "type": "string",
+          "format": "file-path",
+          "description": "Override the manifest's h5ad_path column with this file.",
+          "help_text": "Needed on ICA and similar platforms that don't mount a project's data tree into the task container -- a path typed into the manifest (relative or absolute) resolves to nothing there; only a file passed as an actual pipeline input (this one) gets staged in. Leave blank on a local/HPC run where the manifest's own h5ad_path is already reachable from wherever the task executes.",
+          "fa_icon": "fas fa-dna"
         },
         "qc_container": {
           "type": "string",

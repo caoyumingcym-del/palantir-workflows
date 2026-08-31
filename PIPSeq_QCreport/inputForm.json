@@ -10,17 +10,28 @@
       "id": "section_manifest",
       "type": "section",
       "label": "Required inputs",
-      "helpText": "manifest is the one thing you must provide. qc_container has a working public default -- only change it if you've rebuilt and pushed your own image."
+      "helpText": "manifest is the one thing you must provide. h5ad is effectively required too, on this platform -- see its own note. qc_container has a working public default -- only change it if you've rebuilt and pushed your own image."
     },
     {
       "id": "manifest",
       "type": "data",
       "label": "Sample manifest",
-      "helpText": "Sample manifest CSV/TSV. Points at the sequencing data (h5ad_path) and carries the optional gRNA/hashtag whitelist paths and, once filled in, the five QC thresholds below. A run that reaches the QC stage writes those thresholds back into this file (with a timestamped backup made first), so use a manifest you're fine having edited, not a read-only reference copy.",
+      "helpText": "Sample manifest CSV/TSV. Carries the optional gRNA/hashtag whitelist paths and, once filled in, the five QC thresholds below. A run that reaches the QC stage writes those thresholds back into this file (with a timestamped backup made first), so use a manifest you're fine having edited, not a read-only reference copy. Its h5ad_path column is NOT used for locating the data on this platform -- see the h5ad field below.",
       "dataFilter": {
         "dataType": "file"
       },
       "minValues": 1,
+      "maxValues": 1
+    },
+    {
+      "id": "h5ad",
+      "type": "data",
+      "label": "h5ad file",
+      "helpText": "The .h5ad this run analyses. Select it here rather than relying on the manifest's own h5ad_path column: this platform does not mount a project's data tree into the running pipeline, so a path typed into the manifest (relative or absolute) resolves to nothing once the task starts -- only files picked here actually get staged in. Must be the same file the manifest's h5ad_path column describes (its value is otherwise ignored).",
+      "dataFilter": {
+        "dataType": "file"
+      },
+      "minValues": 0,
       "maxValues": 1
     },
     {

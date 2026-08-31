@@ -88,9 +88,20 @@ combined with `docker`/`conda`, e.g. `-profile test,docker`.
   pipeline changes nothing about that.
 - The manifest's own `output_path` column is **ignored** by this pipeline
   (overridden with `--output-path` so results land inside each task's Nextflow
-  work directory and get published cleanly under `--outdir`) and, as of the
-  underlying tool's `--output-path`/`--h5ad` override support, doesn't need
+  work directory and get published cleanly under `--outdir`) and doesn't need
   to be present in the manifest at all.
+- **`--h5ad`** (for ICA specifically; optional on a local/HPC run): overrides
+  the manifest's `h5ad_path` column with an explicitly staged file, and once
+  given the manifest doesn't need a valid `h5ad_path` column either. **You
+  need this on ICA.** ICA does not mount a project's data tree into the task
+  container, so a path typed into the manifest -- relative or absolute,
+  doesn't matter -- resolves to nothing once the container starts; only
+  files declared as actual pipeline inputs (like `manifest` itself, or this
+  one) get staged in. On a local/HPC run where the manifest's own
+  `h5ad_path` is already reachable from wherever the task executes, leave
+  this blank -- same for `grna_whitelist`/`hashtag_whitelist`, which don't
+  have an equivalent override yet and are subject to the same limitation on
+  ICA if you use them.
 - **`--qc_container`** (for `-profile docker`/`singularity`/ICA): the image
   every step runs in. Defaults to a published, public image (Google Artifact
   Registry) -- see Environments below; only set this yourself if you've
@@ -124,6 +135,7 @@ for what each one does). The most common:
 
 | param                 | CLI flag equivalent      | notes |
 |-----------------------|---------------------------|-------|
+| `--h5ad`              | `--h5ad`                  | required on ICA -- see Inputs above |
 | `--qc_container`      | n/a (Nextflow `container` directive) | defaulted (public GCP image); see Environments |
 | `--mode`              | `--explore` / `--auto-thresholds` | see above |
 | `--min_genes` etc.    | `--min-genes` etc.        | the 5 QC thresholds |
@@ -174,9 +186,18 @@ parameters as checkboxes). Point ICA's pipeline import at
 `PIPSeq_QCreport/nextflow.config` / `PIPSeq_QCreport/main.nf` for the
 pipeline itself.
 
-**Two things that are easy to miss on ICA specifically:**
+**Three things that are easy to miss on ICA specifically:**
 
-1. **`qc_container` is read directly by the process, not a profile**, for
+1. **`h5ad` needs to be filled in -- ICA does not mount your project's data
+   into the task container.** Only files explicitly attached as pipeline
+   inputs get staged; a path typed into the manifest's `h5ad_path` column,
+   however it's written, resolves to nothing once the container starts. This
+   surfaced as `pipeline error: h5ad file not found: <path>`, reproducibly,
+   with both a relative and an absolute path in that column, and disappeared
+   entirely once the file was attached through the `h5ad` field instead. The
+   same limitation applies to `grna_whitelist`/`hashtag_whitelist` if you use
+   them, which don't have an equivalent override field yet.
+2. **`qc_container` is read directly by the process, not a profile**, for
    the reason above: ICA does not reliably apply `-profile docker`. It
    already defaults to a public GCP image (see Environments), so most
    launches don't need to touch this field at all. Only override it if
@@ -184,7 +205,7 @@ pipeline itself.
    rebuilding to GCP, an AWS ECR alternative, and (if neither cloud account
    is available to you) uploading a TAR directly into ICA's own Docker
    Repository.
-2. **ICA's git-based pipeline import pins to a specific commit, not a
+3. **ICA's git-based pipeline import pins to a specific commit, not a
    branch, and the ICA UI doesn't let you edit that commit after the
    initial import.** Pushing a new commit to this branch does **not**
    update an already-imported ICA pipeline. [`ica_tools/`](ica_tools/)

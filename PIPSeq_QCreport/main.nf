@@ -47,6 +47,9 @@ def helpMessage() {
                                         on thresholds derived from the data
 
     Common overrides (all optional; omit to derive from the data / manifest):
+      --h5ad PATH             override the manifest's h5ad_path column -- needed
+                              on platforms (ICA) that don't mount arbitrary
+                              manifest-referenced paths into the task container
       --min_genes, --max_genes, --min_counts, --max_counts, --max_mito
       --config PATH           JSON/YAML file of perturbseq_report config overrides
       --counts_layer NAME     read raw counts from adata.layers[NAME] instead of X
@@ -104,7 +107,26 @@ workflow {
             list
         }
 
-    RUN_QC_REPORT(manifest_inputs)
+    // Optional: stage a single .h5ad as an explicit pipeline input and pass
+    // it via --h5ad, instead of trusting the manifest's own h5ad_path column.
+    // Needed on ICA specifically -- ICA does not mount a project's data tree
+    // into the task container, so a path typed into the manifest (relative
+    // OR absolute) resolves to nothing once the container starts; only
+    // files declared as actual pipeline inputs (like `manifest` itself) get
+    // staged. `[]` is the standard Nextflow idiom for "no file" on a `path`
+    // input; the module gates on isSet(params.h5ad) rather than inspecting
+    // the staged value itself, so this never needs to be referenced when
+    // absent.
+    //
+    // Uniform across every manifest in this run/batch: fine for the normal
+    // case of one manifest per launch (the only shape ICA's single-file
+    // picker supports anyway), wrong if you combine --h5ad with a
+    // glob-based multi-manifest batch of genuinely different experiments.
+    h5ad_ch = params.h5ad
+        ? Channel.fromPath(params.h5ad, checkIfExists: true)
+        : Channel.value([])
+
+    RUN_QC_REPORT(manifest_inputs.combine(h5ad_ch))
 
     RUN_QC_REPORT.out.report
         .ifEmpty { log.info "No manifest reached the report stage in this run (all explore-only, or all failed)." }

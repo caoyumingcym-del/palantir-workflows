@@ -43,7 +43,7 @@ process RUN_QC_REPORT {
     container { isSet(params.qc_container) ? params.qc_container : null }
 
     input:
-    tuple val(id), path(manifest_dir), val(manifest_name)
+    tuple val(id), path(manifest_dir), val(manifest_name), path(h5ad_file)
 
     output:
     tuple val(id), path("analysis_outputs"), emit: analysis_outputs
@@ -59,6 +59,17 @@ process RUN_QC_REPORT {
     if (params.mode == 'explore')      flags << '--explore'
     else if (params.mode == 'auto')    flags << '--auto-thresholds'
     // 'default' (the CLI's own explore-first decision): no flag added.
+
+    // Overrides the manifest's own h5ad_path column entirely. Needed on ICA
+    // and similar platforms that don't mount a project's data tree into the
+    // task container -- a path typed into the manifest, relative or
+    // absolute, resolves to nothing there; only files declared as actual
+    // pipeline inputs (like this one, staged via main.nf's h5ad_ch) exist
+    // inside the container. Checked against params.h5ad (not h5ad_file
+    // directly): main.nf passes literally `[]` down this input when
+    // --h5ad wasn't given, and referencing an empty path collection in the
+    // flag itself is what isSet() here is precisely avoiding.
+    if (isSet(params.h5ad)) flags << "--h5ad ${h5ad_file}"
 
     if (isSet(params.min_genes))  flags << "--min-genes ${params.min_genes}"
     if (isSet(params.max_genes))  flags << "--max-genes ${params.max_genes}"
