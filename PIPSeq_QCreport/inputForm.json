@@ -10,13 +10,13 @@
       "id": "section_manifest",
       "type": "section",
       "label": "Required inputs",
-      "helpText": "manifest is the one thing you must provide. h5ad is effectively required too, on this platform -- see its own note. qc_container has a working public default -- only change it if you've rebuilt and pushed your own image."
+      "helpText": "manifest and h5ad are required. qc_container already has a working default."
     },
     {
       "id": "manifest",
       "type": "data",
       "label": "Sample manifest",
-      "helpText": "Sample manifest CSV/TSV. Carries the optional gRNA/hashtag whitelist paths and, once filled in, the five QC thresholds below. A run that reaches the QC stage writes those thresholds back into this file (with a timestamped backup made first), so use a manifest you're fine having edited, not a read-only reference copy. Its h5ad_path column is NOT used for locating the data on this platform -- see the h5ad field below.",
+      "helpText": "Required. The sample manifest (CSV or TSV) listing your samples/runs and their settings. Note: once a run reaches the QC stage, it writes the derived thresholds back into this file, so don't use a read-only copy.",
       "dataFilter": {
         "dataType": "file"
       },
@@ -27,7 +27,7 @@
       "id": "h5ad",
       "type": "data",
       "label": "h5ad file",
-      "helpText": "The .h5ad this run analyses. Select it here rather than relying on the manifest's own h5ad_path column: this platform does not mount a project's data tree into the running pipeline, so a path typed into the manifest (relative or absolute) resolves to nothing once the task starts -- only files picked here actually get staged in. Must be the same file the manifest's h5ad_path column describes (its value is otherwise ignored).",
+      "helpText": "Required. The .h5ad file to analyze. Must be the same file named in the manifest's h5ad_path column.",
       "dataFilter": {
         "dataType": "file"
       },
@@ -38,7 +38,7 @@
       "id": "dragen_root",
       "type": "data",
       "label": "DRAGEN output directory (one or more)",
-      "helpText": "Optional, for the report's 'Sequencing QC' section (upstream DRAGEN read/mapping metrics) -- everything else in the report works without it. Select the directory (or directories) containing your runs' DRAGEN output subfolders, each named the same way the manifest's own dragen_path values already end. If your runs don't all share one common parent directory, select several -- each is tried for every run, so it's fine to just select every relevant directory rather than work out which run needs which. Needed for the same reason as the h5ad field above: this platform does not mount a project's data tree into the running pipeline, so the manifest's own dragen_path values resolve to nothing on their own. Leaving this blank just means the Sequencing QC section is skipped -- it is not an error.",
+      "helpText": "Optional. Directory (or directories) containing your runs' DRAGEN output folders -- only needed for the report's Sequencing QC section. Select more than one if your runs' DRAGEN output isn't all under one shared parent directory. Leave blank to skip that section; everything else in the report is unaffected.",
       "dataFilter": {
         "dataType": "directory"
       },
@@ -49,7 +49,7 @@
       "id": "qc_container",
       "type": "textbox",
       "label": "qc_container",
-      "helpText": "Container image to run every step in. Defaults to the published image (Google Artifact Registry, public -- no credentials needed to pull it), rebuilt from containers/Dockerfile via containers/build_and_push_gcp.sh. Only change this if you've rebuilt and pushed your own copy (containers/SETUP.md covers both GCP and AWS ECR paths).",
+      "helpText": "Optional. Container image the pipeline runs in. Already set to a working public default -- only change this if you've built and pushed your own image.",
       "value": "us-central1-docker.pkg.dev/methods-dev-lab/pipseq-qcreport/pipseq-qcreport:1.3.5"
     },
     {
@@ -400,7 +400,7 @@
       "id": "pipeline_dir",
       "type": "textbox",
       "label": "pipeline_dir",
-      "helpText": "Internal: where the vendored perturbseq_report package lives. Do not edit -- computed automatically (/opt/perturbseq_report_v1.3.5 when qc_container is set, matching containers/Dockerfile; this checkout's own location otherwise). Leave blank.",
+      "helpText": "Internal. Leave blank -- set automatically.",
       "hidden": true
     },
     {
