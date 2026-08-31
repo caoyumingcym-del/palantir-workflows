@@ -34,3 +34,4 @@ dependencies:
   - pip:
       - harmonypy>=0.0.9
       - scrublet>=0.2.3
+      - python-pptx>=0.6.23   # for build_slides.py (BUILD_SLIDES process)

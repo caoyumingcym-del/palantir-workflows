@@ -23,6 +23,7 @@
 nextflow.enable.dsl = 2
 
 include { RUN_QC_REPORT } from './modules/local/run_qc_report.nf'
+include { BUILD_SLIDES  } from './modules/local/build_slides.nf'
 
 def helpMessage() {
     log.info """
@@ -66,6 +67,9 @@ def helpMessage() {
     Output:
       --outdir DIR            where reports/figures/tables are published
                               (default: 'results')
+      --build_slides          build a Google-Slides-ready .pptx from
+                              artifacts.json on every run (default: true;
+                              --build_slides false to skip)
 
     Execution:
       -profile docker|conda|test   see README.md / nextflow.config
@@ -133,4 +137,13 @@ workflow {
 
     RUN_QC_REPORT.out.analysis_outputs
         .subscribe { id, dir -> log.info "[${id}] analysis_outputs -> ${params.outdir}/${id}/analysis_outputs" }
+
+    // On by default: every run that reaches artifacts.json (both explore and
+    // full runs do) gets a .pptx slide deck built from it, the same registry
+    // the HTML report itself renders from. --build_slides false skips this
+    // (still leaves artifacts.json in place to build one from manually later
+    // -- see build_slides.py's own docstring).
+    if (params.build_slides) {
+        BUILD_SLIDES(RUN_QC_REPORT.out.artifacts)
+    }
 }

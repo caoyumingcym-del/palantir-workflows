@@ -114,15 +114,25 @@ Published under `<outdir>/<manifest-basename>/`:
 ```
 analysis_outputs/
   qc_explore.html | qc_report.html   the report (see above for which one)
+  qc_deck.pptx                        slide deck built from artifacts.json (see below)
   figures/                            PNGs, also embedded in the HTML
   tables/                             every table as CSV
   checkpoints/                        intermediate state
-  artifacts.json                      everything the report is built from
+  artifacts.json                      everything the report (and the deck) is built from
   config_used.json                    the fully-resolved config for this run
 run.log                               full stdout/stderr of the run
+build_slides.log                      stdout/stderr of the slide-deck build
 <manifest-name>                       the manifest AS USED (thresholds written back)
 <manifest-name>.bak-<timestamp>       backup of the manifest before it was rewritten
 ```
+
+`qc_deck.pptx` is a Google-Slides-ready deck built from `artifacts.json` by
+[`build_slides.py`](perturbseq_report_v1.3.5/build_slides.py) -- a standalone
+script in the vendored package, not something `perturbseq-report` itself
+produces; `--build_slides false` skips this step (`artifacts.json` is still
+written either way, so you can build one manually later regardless). Drag it
+into Drive and open with Google Slides, or use **File > Import slides** in an
+existing deck.
 
 Pipeline-level execution reports (timeline, trace, DAG) land under
 `<outdir>/pipeline_info/`.
@@ -147,6 +157,8 @@ for what each one does). The most common:
 | `--batch_correct`      | `--batch-correct`        | `none` (default) or `harmony` |
 | `--resolution`         | `--resolution`           | Leiden resolution |
 | `--extra_args`         | (anything)               | passed through verbatim, for flags with no dedicated param |
+| `--build_slides`       | n/a (runs build_slides.py) | on by default; produces analysis_outputs/qc_deck.pptx |
+| `--slides_extra_args`  | (anything, to build_slides.py) | passed through verbatim, for its flags with no dedicated param |
 
 ## Environments
 

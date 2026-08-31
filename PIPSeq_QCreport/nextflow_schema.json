@@ -283,6 +283,28 @@
         }
       }
     },
+    "slides_options": {
+      "title": "Slide deck",
+      "type": "object",
+      "fa_icon": "fas fa-file-powerpoint",
+      "description": "A Google-Slides-ready .pptx (analysis_outputs/qc_deck.pptx), built from the same registry the HTML report renders from. On by default.",
+      "properties": {
+        "build_slides": {
+          "type": "boolean",
+          "default": true,
+          "description": "Build the .pptx slide deck.",
+          "help_text": "On by default. artifacts.json is still written either way, so you can build one manually later even if you turn this off -- see perturbseq_report_v1.3.5/build_slides.py.",
+          "fa_icon": "fas fa-file-powerpoint"
+        },
+        "slides_extra_args": {
+          "type": "string",
+          "description": "Any build_slides.py flag(s) with no dedicated option here, passed through verbatim.",
+          "help_text": "e.g. --per-slide, --tables, --sections, --aspect. See perturbseq_report_v1.3.5/build_slides.py --help.",
+          "hidden": true,
+          "fa_icon": "fas fa-terminal"
+        }
+      }
+    },
     "advanced_options": {
       "title": "Advanced / escape hatches",
       "type": "object",
@@ -326,6 +348,7 @@
     { "$ref": "#/definitions/guide_calling_options" },
     { "$ref": "#/definitions/hashtag_options" },
     { "$ref": "#/definitions/report_options" },
+    { "$ref": "#/definitions/slides_options" },
     { "$ref": "#/definitions/advanced_options" }
   ]
 }

@@ -48,7 +48,10 @@ process RUN_QC_REPORT {
     output:
     tuple val(id), path("analysis_outputs"), emit: analysis_outputs
     path "analysis_outputs/qc_*.html", optional: true, emit: report
-    path "analysis_outputs/artifacts.json", optional: true, emit: artifacts
+    // Paired with id (not a bare path) so BUILD_SLIDES can tag/publish its
+    // own output per-manifest downstream, the same way every other emit here
+    // already is.
+    tuple val(id), path("analysis_outputs/artifacts.json"), optional: true, emit: artifacts
     path "run.log", emit: log
     path "${manifest_name}", emit: manifest_used
     path "${manifest_name}.bak-*", optional: true, emit: manifest_backup

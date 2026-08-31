@@ -338,6 +338,27 @@
       "value": false
     },
     {
+      "id": "section_slides",
+      "type": "section",
+      "label": "Slide deck",
+      "helpText": "A Google-Slides-ready .pptx (analysis_outputs/qc_deck.pptx), built from the same registry the HTML report renders from. On by default."
+    },
+    {
+      "id": "build_slides",
+      "type": "checkbox",
+      "label": "build_slides",
+      "helpText": "Build the .pptx slide deck. On by default; artifacts.json is still written either way, so you can build one manually later even if you turn this off (see perturbseq_report_v1.3.5/build_slides.py).",
+      "value": true
+    },
+    {
+      "id": "slides_extra_args",
+      "type": "textbox",
+      "label": "slides_extra_args",
+      "helpText": "Any build_slides.py flag(s) with no dedicated option here (--per-slide, --tables, --sections, --aspect, ...), passed through verbatim. See perturbseq_report_v1.3.5/build_slides.py --help.",
+      "hidden": true,
+      "value": ""
+    },
+    {
       "id": "section_generic_options",
       "type": "section",
       "label": "Advanced / escape hatches",
