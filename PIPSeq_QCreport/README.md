@@ -104,14 +104,19 @@ combined with `docker`/`conda`, e.g. `-profile test,docker`.
   ICA if you use them.
 - **`--dragen_root`** (optional, for the report's Sequencing QC section):
   the same fix as `--h5ad`, for the manifest's per-run `prefix`/`dragen_path`
-  columns instead of its (manifest-wide) `h5ad_path`. Point it at a directory
-  containing every run's DRAGEN output subfolder, each named the same way
-  the manifest's own `dragen_path` values already end (their basename) --
-  this overrides every run's `dragen_path` to `<dragen_root>/<that
-  basename>`. Unlike `h5ad`, this is genuinely optional: leaving it blank on
-  ICA just means the "Sequencing QC" section (upstream DRAGEN read/mapping
-  metrics) is skipped -- transcriptome, guide, hashtag and perturbation
-  analysis are all unaffected either way.
+  columns instead of its (manifest-wide) `h5ad_path`. Point it at one or more
+  directories, each containing some of the runs' DRAGEN output subfolders,
+  every one named the same way the manifest's own `dragen_path` values
+  already end (their basename). Every root is tried, in order, for every
+  run; whichever `<root>/<that basename>` actually exists is what that
+  run's `dragen_path` gets overridden to. Several roots exist for exactly
+  the case where runs' DRAGEN output doesn't all share one common parent
+  directory -- on ICA, the field accepts multiple directory selections; on
+  the CLI, pass them space-separated after one `--dragen-root`. Unlike
+  `h5ad`, this is genuinely optional: leaving it blank on ICA just means the
+  "Sequencing QC" section (upstream DRAGEN read/mapping metrics) is skipped
+  -- transcriptome, guide, hashtag and perturbation analysis are all
+  unaffected either way.
 - **`--qc_container`** (for `-profile docker`/`singularity`/ICA): the image
   every step runs in. Defaults to a published, public image (Google Artifact
   Registry) -- see Environments below; only set this yourself if you've

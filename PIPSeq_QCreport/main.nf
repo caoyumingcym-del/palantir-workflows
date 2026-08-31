@@ -51,10 +51,12 @@ def helpMessage() {
       --h5ad PATH             override the manifest's h5ad_path column -- needed
                               on platforms (ICA) that don't mount arbitrary
                               manifest-referenced paths into the task container
-      --dragen_root DIR       directory holding every run's DRAGEN output
-                              subfolder (each named like the manifest's own
-                              dragen_path values) -- same reason as --h5ad;
-                              without it, "Sequencing QC" is skipped, non-fatally
+      --dragen_root DIR...    one or more directories holding runs' DRAGEN
+                              output subfolders (each named like the
+                              manifest's own dragen_path values); every root
+                              is tried for every run -- same reason as
+                              --h5ad; without it, "Sequencing QC" is skipped,
+                              non-fatally
       --min_genes, --max_genes, --min_counts, --max_counts, --max_mito
       --config PATH           JSON/YAML file of perturbseq_report config overrides
       --counts_layer NAME     read raw counts from adata.layers[NAME] instead of X
@@ -135,16 +137,29 @@ workflow {
         : Channel.value([])
 
     // Same story as h5ad_ch, for the manifest's (per-row) dragen_path
-    // columns instead of its (manifest-wide) h5ad_path: stage one directory
-    // that contains every run's DRAGEN output subfolder, and the module
-    // passes it as --dragen-root, which replaces each run's dragen_path
-    // with <this>/<basename of that run's own dragen_path value>. Without
-    // it, the "Sequencing QC" report section is silently skipped on ICA --
-    // non-fatal (transcriptome/guide/hashtag/perturbation analysis are
-    // unaffected either way), but avoidable.
-    dragen_root_ch = params.dragen_root
-        ? Channel.fromPath(params.dragen_root, checkIfExists: true)
-        : Channel.value([])
+    // columns instead of its (manifest-wide) h5ad_path: stage every
+    // directory given here and the module passes them all as
+    // --dragen-root, which tries each in turn against
+    // <root>/<basename of that run's own dragen_path value> and uses
+    // whichever exists. Without it, the "Sequencing QC" report section is
+    // silently skipped on ICA -- non-fatal (transcriptome/guide/hashtag/
+    // perturbation analysis are unaffected either way), but avoidable.
+    //
+    // One or several: several runs' DRAGEN output does not always share one
+    // common parent directory that could be selected/staged as a single
+    // unit, so ICA's dragen_root field allows selecting more than one
+    // (maxValues > 1 in inputForm.json) -- params.dragen_root may then be a
+    // real List rather than a single value, handled either way here. All
+    // staged as one list-valued `path` input (rather than, say,
+    // `.combine()`-ing a channel with one element per directory, which
+    // would multiply out into extra tasks instead of giving one task
+    // several directories to search).
+    def dragen_roots = params.dragen_root
+        ? (params.dragen_root instanceof List ? params.dragen_root : [params.dragen_root])
+            .findAll { it }
+            .collect { file(it, checkIfExists: true) }
+        : []
+    dragen_root_ch = Channel.value(dragen_roots)
 
     RUN_QC_REPORT(manifest_inputs.combine(h5ad_ch).combine(dragen_root_ch))
 

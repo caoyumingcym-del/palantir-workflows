@@ -43,7 +43,7 @@ process RUN_QC_REPORT {
     container { isSet(params.qc_container) ? params.qc_container : null }
 
     input:
-    tuple val(id), path(manifest_dir), val(manifest_name), path(h5ad_file), path(dragen_root_dir)
+    tuple val(id), path(manifest_dir), val(manifest_name), path(h5ad_file), path(dragen_root_dirs)
 
     output:
     tuple val(id), path("analysis_outputs"), emit: analysis_outputs
@@ -74,11 +74,19 @@ process RUN_QC_REPORT {
     // flag itself is what isSet() here is precisely avoiding.
     if (isSet(params.h5ad)) flags << "--h5ad ${h5ad_file}"
 
-    // Same story, for the manifest's per-run dragen_path columns. Without
-    // this, "Sequencing QC" is skipped non-fatally on a platform that
-    // doesn't mount project data into the task -- everything else in the
-    // report is unaffected either way.
-    if (isSet(params.dragen_root)) flags << "--dragen-root ${dragen_root_dir}"
+    // Same story, for the manifest's per-run dragen_path columns -- one or
+    // several roots (ICA's dragen_root field allows selecting more than
+    // one), each tried in turn against every run. Without this,
+    // "Sequencing QC" is skipped non-fatally on a platform that doesn't
+    // mount project data into the task -- everything else in the report is
+    // unaffected either way.
+    //
+    // Plain Groovy truthiness here, not isSet(): params.dragen_root can now
+    // be a real List (a multi-select data field), and isSet()'s
+    // string-based blank check would treat toString() of an empty list
+    // ("[]") as non-blank -- wrongly adding an empty --dragen-root. Groovy
+    // truthiness already treats null, "", and [] uniformly as false.
+    if (params.dragen_root) flags << "--dragen-root ${dragen_root_dirs}"
 
     if (isSet(params.min_genes))  flags << "--min-genes ${params.min_genes}"
     if (isSet(params.max_genes))  flags << "--max-genes ${params.max_genes}"

@@ -28,10 +28,10 @@
           "fa_icon": "fas fa-dna"
         },
         "dragen_root": {
-          "type": "string",
-          "format": "directory-path",
-          "description": "Directory containing every run's DRAGEN output subfolder, for the report's Sequencing QC section.",
-          "help_text": "Optional -- everything else in the report works without it. Each subfolder must be named the same way the manifest's own dragen_path values already end (their basename); this overrides every run's dragen_path to <this>/<that basename>, for the same reason --h5ad exists (this platform doesn't mount project data into the task, so the manifest's own dragen_path values resolve to nothing on their own). Leaving this blank just skips the Sequencing QC section -- not an error.",
+          "type": "array",
+          "items": { "type": "string", "format": "directory-path" },
+          "description": "One or more directories containing runs' DRAGEN output subfolders, for the report's Sequencing QC section.",
+          "help_text": "Optional -- everything else in the report works without it. Each subfolder must be named the same way the manifest's own dragen_path values already end (their basename); this overrides every run's dragen_path to whichever <a root>/<that basename> actually exists, trying every root given here for every run. Several roots are for when runs' DRAGEN output doesn't share one common parent directory -- for the same reason --h5ad exists, this platform doesn't mount project data into the task, so the manifest's own dragen_path values resolve to nothing on their own. On the CLI, pass multiple paths space-separated after one --dragen_root. Leaving this blank just skips the Sequencing QC section -- not an error.",
           "fa_icon": "fas fa-chart-bar"
         },
         "qc_container": {

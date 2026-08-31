@@ -95,14 +95,18 @@ def build_parser() -> argparse.ArgumentParser:
                    help="override the manifest's output_path column")
     g.add_argument("--h5ad", type=Path, dest="h5ad_path",
                    help="override the manifest's h5ad_path column")
-    g.add_argument("--dragen-root", type=Path,
-                   help="directory containing every run's DRAGEN output "
-                        "subfolder, each named the same way the manifest's "
-                        "own dragen_path values already end (their "
-                        "basename) -- overrides every run's dragen_path to "
-                        "<this>/<that basename>. For a platform that "
-                        "doesn't mount project data into the task, the "
-                        "same reason --h5ad exists")
+    g.add_argument("--dragen-root", type=Path, nargs="+", metavar="DIR",
+                   help="one or more directories, each containing some of "
+                        "the runs' DRAGEN output subfolders (each named the "
+                        "same way the manifest's own dragen_path values "
+                        "already end -- their basename). Every root is "
+                        "tried for every run; overrides that run's "
+                        "dragen_path to whichever <root>/<that basename> "
+                        "actually exists. Several roots are for when runs' "
+                        "DRAGEN output doesn't share one common parent "
+                        "directory. For a platform that doesn't mount "
+                        "project data into the task, the same reason "
+                        "--h5ad exists")
     g.add_argument("--config", type=Path,
                    help="JSON or YAML file of configuration overrides")
     g.add_argument("--counts-layer", type=str, dest="counts_layer",

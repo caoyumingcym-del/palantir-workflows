@@ -355,34 +355,55 @@ class Manifest:
         out[self.sample_col] = out[self.sample_col].astype(str)
         return out.set_index(self.sample_col)
 
-    def dragen_runs(self, root_override: str | Path | None = None) -> list[dict[str, Any]]:
+    def dragen_runs(
+        self, root_override: str | Path | Iterable[str | Path] | None = None
+    ) -> list[dict[str, Any]]:
         """(sample, prefix, dragen_path) triples with a usable dragen_path.
 
         root_override
             If given, each run's ``dragen_path`` becomes
-            ``root_override / <basename of the manifest's own dragen_path
-            value>`` instead of resolving that column value directly (which
-            is otherwise relative-to-manifest-directory or passed through
+            ``<a root> / <basename of the manifest's own dragen_path value>``
+            instead of resolving that column value directly (which is
+            otherwise relative-to-manifest-directory or passed through
             unchanged if absolute -- see ``_resolve``). For a platform (ICA)
             that does not mount a project's data tree into the task
             container, the manifest's own ``dragen_path`` values -- however
-            they are written -- resolve to nothing there; staging one
-            directory that contains every run's DRAGEN output subfolder,
-            each named the same way the manifest's own ``dragen_path``
-            values already end (the common convention, and the reason this
-            preserves the basename rather than requiring it to equal
-            ``prefix``), lets that single directory stand in for all of
-            them at once. See ``cli.py``'s ``--dragen-root``.
+            they are written -- resolve to nothing there.
+
+            Accepts either one directory or several: several runs' DRAGEN
+            output does not always share one common parent that could be
+            staged as a single directory, so this may be a list. Each root
+            is tried in turn against that run's own basename (preserving
+            whatever per-run naming the manifest already uses, not assuming
+            it equals ``prefix``); the first root where that subdirectory
+            actually exists wins, so it's fine to pass every available root
+            for every run rather than track which root covers which run.
+            If none of them has it, the first root's candidate path is used
+            (a deterministic, informative "not found here" rather than
+            silently picking one). See ``cli.py``'s ``--dragen-root``.
         """
         if not {"prefix", "dragen_path"} <= set(self.df.columns):
             return []
-        root = Path(root_override).expanduser() if root_override is not None else None
+        if not root_override:
+            # Falsy covers None *and* an empty tuple/list -- PipelineConfig's
+            # dragen_root defaults to () (a tuple, not None), so this has to
+            # treat both as "nothing was given" or an empty `roots` below
+            # would make `candidates[0]` raise IndexError for every run.
+            roots: list[Path] | None = None
+        elif isinstance(root_override, (str, Path)):
+            roots = [Path(root_override).expanduser()]
+        else:
+            roots = [Path(r).expanduser() for r in root_override]
         out = []
         for _, r in self.df.iterrows():
             if is_blank(r.get("dragen_path")) or is_blank(r.get("prefix")):
                 continue
             raw = str(r["dragen_path"]).strip()
-            dragen_path = (root / Path(raw).name) if root is not None else self._resolve(raw)
+            if roots is not None:
+                candidates = [root / Path(raw).name for root in roots]
+                dragen_path = next((c for c in candidates if c.exists()), candidates[0])
+            else:
+                dragen_path = self._resolve(raw)
             out.append(
                 {
                     "sample": str(r[self.sample_col]),
