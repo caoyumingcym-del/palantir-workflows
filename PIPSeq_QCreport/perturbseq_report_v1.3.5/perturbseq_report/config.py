@@ -136,6 +136,17 @@ class ModalityConfig:
         "{prefix}.scRNA.cellhashing.tsv.gz",
         "{prefix}.cellhashing.tsv",
         "{prefix}_cellhashing.tsv",
+        "{prefix}.scRNA.demux.tsv",
+        "{prefix}.demux.tsv",
+        # Suffix-tolerant, for a longer DRAGEN-written filename than the
+        # manifest's own prefix (e.g. a hashing/feature-library tag), same
+        # reasoning as seqmetrics.py's METRIC_FILE_PATTERNS. Delimiter
+        # required right after the prefix so e.g. "run_1" can't also match
+        # a real "run_10_..." file.
+        "{prefix}[-_.]*.scRNA.cellhashing.tsv",
+        "{prefix}[-_.]*.cellhashing.tsv",
+        "{prefix}[-_.]*.scRNA.demux.tsv",
+        "{prefix}[-_.]*.demux.tsv",
         "*.scRNA.cellhashing.tsv",
         "*cellhashing.tsv",
     )

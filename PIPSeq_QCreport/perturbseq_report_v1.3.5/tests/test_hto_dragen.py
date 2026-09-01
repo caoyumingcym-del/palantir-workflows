@@ -24,6 +24,22 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from perturbseq_report.config import PipelineConfig            # noqa: E402
+from perturbseq_report.hto_dragen import find_cellhashing_file  # noqa: E402
+
+
+def test_finds_demux_tsv_with_suffixed_dragen_filename(tmp_path) -> None:
+    """DRAGEN's actual per-cell hashtag file can be named "*.scRNA.demux.tsv"
+    (not "*cellhashing.tsv"), and its own name can carry a longer tag past
+    the manifest's prefix (e.g. "HR20260218_1_hashingABCD...tsv" for
+    manifest prefix "HR20260218_1") -- see the WALKUP-19889 report."""
+    p = tmp_path / "HR20260218_1_hashingABCD.scRNA.demux.tsv"
+    p.write_text("Barcode\tprot:hash.A\tprot:hash.B\n"
+                 "AAACAAACAAACACAAACACAACAAATG\t0\t3\n")
+    cfg = PipelineConfig()
+    found = find_cellhashing_file(tmp_path, "HR20260218_1", cfg.modality.hto_dragen_file_patterns)
+    assert found == p
+
 FAILURES: list[str] = []
 
 

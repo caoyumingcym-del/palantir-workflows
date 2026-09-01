@@ -50,7 +50,7 @@
       "type": "textbox",
       "label": "qc_container",
       "helpText": "Optional. Container image the pipeline runs in. Already set to a working public default -- only change this if you've built and pushed your own image.",
-      "value": "us-central1-docker.pkg.dev/methods-dev-lab/pipseq-qcreport/pipseq-qcreport:1.3.5-2"
+      "value": "us-central1-docker.pkg.dev/methods-dev-lab/pipseq-qcreport/pipseq-qcreport:1.3.5-3"
     },
     {
       "id": "section_input_output_options",
