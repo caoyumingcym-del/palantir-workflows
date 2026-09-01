@@ -622,7 +622,7 @@ class EmbeddingConfig:
     # near 5-10% regardless of the data. Prefer scrublet.
     detect_doublets: bool = False
 
-    n_marker_genes: int = 10
+    n_marker_genes: int = 5
     # Markers use a Mann-Whitney one-vs-rest test ranked by effect size. Not
     # configurable, and the `marker_method` field that implied otherwise (and
     # that nothing read) was removed in v1.3.0.

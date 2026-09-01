@@ -206,6 +206,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Leiden clustering resolution (default 1.0)")
     g.add_argument("--n-top-genes", type=int,
                    help="number of highly variable genes (default 5000)")
+    g.add_argument("--n-marker-genes", type=int,
+                   help="top marker genes per cluster shown in the marker "
+                        "dot plot (default 5)")
 
     g = p.add_argument_group("guide calling")
     g.add_argument("--guide-min-reads", type=int, dest="min_reads",
@@ -249,7 +252,7 @@ def _collect_overrides(args: argparse.Namespace) -> dict:
         if v is not None:
             o[key] = v
     simple = (
-        "leiden_resolution", "n_top_genes", "batch_correct", "hvg_batch_key",
+        "leiden_resolution", "n_top_genes", "n_marker_genes", "batch_correct", "hvg_batch_key",
         "min_reads", "purity_min", "ntc_label", "threshold_mode",
         "positive_quantile", "dual_guide", "hto_normalisation",
     )

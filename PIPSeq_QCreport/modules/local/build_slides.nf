@@ -18,7 +18,11 @@ process BUILD_SLIDES {
     container { isSet(params.qc_container) ? params.qc_container : null }
 
     input:
-    tuple val(id), path(artifacts_json)
+    // The whole analysis_outputs directory, not just artifacts.json --
+    // build_slides.py resolves every figure/table path in it relative to
+    // artifacts.json's own directory, so figures/ and tables/ have to be
+    // staged alongside it.
+    tuple val(id), path(analysis_outputs_dir)
 
     output:
     tuple val(id), path("analysis_outputs/qc_deck.pptx"), emit: deck
@@ -43,7 +47,7 @@ process BUILD_SLIDES {
     """
     set -euo pipefail
     mkdir -p analysis_outputs
-    python3 "${pipelineDir}/build_slides.py" "${artifacts_json}" \\
+    python3 "${pipelineDir}/build_slides.py" "${analysis_outputs_dir}/artifacts.json" \\
         --out analysis_outputs/qc_deck.pptx \\
         ${flag_str} \\
         2>&1 | tee build_slides.log

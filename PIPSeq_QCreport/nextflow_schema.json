@@ -176,6 +176,11 @@
           "description": "Number of highly variable genes (tool default: 5000).",
           "fa_icon": "fas fa-sliders-h"
         },
+        "n_marker_genes": {
+          "type": "integer",
+          "description": "Top marker genes per cluster shown in the marker dot plot (tool default: 5).",
+          "fa_icon": "fas fa-sliders-h"
+        },
         "cluster_col": {
           "type": "string",
           "description": "Name of an existing obs column holding cluster labels, to reuse instead of reclustering.",

@@ -175,6 +175,14 @@ workflow {
     // (still leaves artifacts.json in place to build one from manually later
     // -- see build_slides.py's own docstring).
     if (params.build_slides) {
-        BUILD_SLIDES(RUN_QC_REPORT.out.artifacts)
+        // build_slides.py resolves every figure/table path in artifacts.json
+        // relative to that file's OWN directory (see registry.py's Registry
+        // paths and build_slides.py's `root = path.parent`) -- so the whole
+        // analysis_outputs directory has to be staged into BUILD_SLIDES, not
+        // just artifacts.json alone (that shipped a deck with every image
+        // reference pointing at a file that was never staged into the task).
+        qc_ready = RUN_QC_REPORT.out.analysis_outputs
+            .filter { id, dir -> file("${dir}/artifacts.json").exists() }
+        BUILD_SLIDES(qc_ready)
     }
 }

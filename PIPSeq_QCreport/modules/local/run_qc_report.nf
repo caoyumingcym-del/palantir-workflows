@@ -48,10 +48,6 @@ process RUN_QC_REPORT {
     output:
     tuple val(id), path("analysis_outputs"), emit: analysis_outputs
     path "analysis_outputs/qc_*.html", optional: true, emit: report
-    // Paired with id (not a bare path) so BUILD_SLIDES can tag/publish its
-    // own output per-manifest downstream, the same way every other emit here
-    // already is.
-    tuple val(id), path("analysis_outputs/artifacts.json"), optional: true, emit: artifacts
     path "run.log", emit: log
     path "${manifest_name}", emit: manifest_used
     path "${manifest_name}.bak-*", optional: true, emit: manifest_backup
@@ -110,6 +106,7 @@ process RUN_QC_REPORT {
     if (params.hvg_batch_key)   flags << "--hvg-batch-key ${params.hvg_batch_key}"
     if (isSet(params.resolution))  flags << "--resolution ${params.resolution}"
     if (isSet(params.n_top_genes)) flags << "--n-top-genes ${params.n_top_genes}"
+    if (isSet(params.n_marker_genes)) flags << "--n-marker-genes ${params.n_marker_genes}"
 
     if (isSet(params.guide_min_reads))  flags << "--guide-min-reads ${params.guide_min_reads}"
     if (isSet(params.guide_purity_min)) flags << "--guide-purity-min ${params.guide_purity_min}"

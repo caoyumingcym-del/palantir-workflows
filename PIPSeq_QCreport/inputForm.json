@@ -50,7 +50,7 @@
       "type": "textbox",
       "label": "qc_container",
       "helpText": "Optional. Container image the pipeline runs in. Already set to a working public default -- only change this if you've built and pushed your own image.",
-      "value": "us-central1-docker.pkg.dev/methods-dev-lab/pipseq-qcreport/pipseq-qcreport:1.3.5-3"
+      "value": "us-central1-docker.pkg.dev/methods-dev-lab/pipseq-qcreport/pipseq-qcreport:1.3.5-4"
     },
     {
       "id": "section_input_output_options",
@@ -168,6 +168,13 @@
       "type": "textbox",
       "label": "n_top_genes",
       "helpText": "Number of highly variable genes. Leave blank for the tool default (5000).",
+      "value": ""
+    },
+    {
+      "id": "n_marker_genes",
+      "type": "textbox",
+      "label": "n_marker_genes",
+      "helpText": "Top marker genes per cluster shown in the marker dot plot. Leave blank for the tool default (5).",
       "value": ""
     },
     {
