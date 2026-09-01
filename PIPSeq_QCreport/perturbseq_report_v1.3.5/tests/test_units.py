@@ -327,6 +327,22 @@ def test_manifest_reads_and_resolves(tmp_path):
     assert len(m.dragen_runs()) == 3
 
 
+def test_dragen_runs_root_override_matches_selected_dir_itself(tmp_path):
+    """ICA's picker selects a whole directory, not "the parent of one" --
+    if the manifest's dragen_path basename IS the selected root (user
+    picked the run's own output dir directly), root/basename must not be
+    used (doubles the last path segment into a nonexistent dir)."""
+    real_dir = tmp_path / "some" / "long" / "dragen_output"
+    real_dir.mkdir(parents=True)
+    manifest_csv = (
+        "sample,h5ad_path,output_path,prefix,dragen_path\n"
+        "s1,data.h5ad,out,P1,/original/unmounted/path/dragen_output\n"
+    )
+    m = read_manifest(_write(tmp_path, manifest_csv, name="m2.csv"))
+    runs = m.dragen_runs(root_override=[real_dir])
+    assert runs[0]["dragen_path"] == real_dir
+
+
 def test_manifest_strips_padded_headers(tmp_path):
     """A padded header silently reported zero samples in the original."""
     padded = GOOD.replace("sample,", " sample ,", 1)

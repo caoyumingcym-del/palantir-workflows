@@ -400,7 +400,18 @@ class Manifest:
                 continue
             raw = str(r["dragen_path"]).strip()
             if roots is not None:
-                candidates = [root / Path(raw).name for root in roots]
+                name = Path(raw).name
+                candidates = []
+                for root in roots:
+                    # A platform's directory picker (ICA) selects a whole
+                    # directory, not "the parent of one" -- if a user picked
+                    # the run's own output dir directly, root's basename
+                    # already equals `name`, and root/name would double it
+                    # into a nonexistent nested path. Try root itself first
+                    # in that case.
+                    if root.name == name:
+                        candidates.append(root)
+                    candidates.append(root / name)
                 dragen_path = next((c for c in candidates if c.exists()), candidates[0])
             else:
                 dragen_path = self._resolve(raw)
