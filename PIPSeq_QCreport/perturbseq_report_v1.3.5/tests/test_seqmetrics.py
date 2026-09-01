@@ -90,6 +90,25 @@ def test_load_sequencing_metrics_resolves_suffixed_files_for_both_prefixes() -> 
         assert set(sm.files) == {"HR20260218_1", "HR20260218_2"}
 
 
+def test_crispr_mean_reads_per_cell_derived_without_crispr_cell_count() -> None:
+    """DRAGEN's own wording ("Total CRISPR reads matching known barcodes")
+    plus no CRISPR-specific cell count in this file (real-world case seen
+    on WALKUP-19889 -- that count lives in a separate guide_metrics.csv
+    this module doesn't read) must still produce a non-NaN ratio, falling
+    back to the overall GEX estimated_cells like hto_ already does."""
+    with tempfile.TemporaryDirectory() as d:
+        d = Path(d)
+        (d / "HR1.scRNA_metrics.csv").write_text(
+            "SINGLE-CELL RNA METRICS,HR1,Estimated number of cells,28662\n"
+            "SINGLE-CELL RNA METRICS,HR1,Total input reads,500000000\n"
+            "SINGLE-CELL RNA CRISPR METRICS,HR1,"
+            "Total CRISPR reads matching known barcodes,363331555\n"
+        )
+        runs = [{"sample": "s1", "prefix": "HR1", "dragen_path": d}]
+        wide = load_sequencing_metrics(runs).derived()
+        assert wide["crispr_mean_reads_per_cell"].notna().all()
+
+
 if __name__ == "__main__":
     test_exact_prefix_match_still_wins()
     test_suffixed_filename_is_found()

@@ -134,6 +134,7 @@ METRIC_ALIASES: dict[str, tuple[str, ...]] = {
     # --- guide / CRISPR library ---
     "crispr_total_reads": (
         "CRISPR Total input reads", "CRISPR Number of reads", "CRISPR Total reads",
+        "Total CRISPR reads matching known barcodes",
     ),
     "crispr_mean_reads_per_cell": (
         "CRISPR Mean reads per cell", "CRISPR Median reads per cell",
@@ -269,9 +270,13 @@ class SeqMetrics:
             )
 
         # Mean reads per cell, if absent, from total reads / passing cells.
+        # crispr_estimated_cells is rarely reported on its own (DRAGEN often
+        # puts guide-calling cell counts in a separate guide_metrics.csv this
+        # module doesn't read) -- same as hto_, fall back to the overall GEX
+        # estimated_cells rather than leaving the ratio permanently NaN.
         for pref, total, cells in (
             ("", "total_reads", "estimated_cells"),
-            ("crispr_", "crispr_total_reads", "crispr_estimated_cells"),
+            ("crispr_", "crispr_total_reads", "estimated_cells"),
             ("hto_", "hto_total_reads", "estimated_cells"),
         ):
             target = f"{pref}mean_reads_per_cell"
